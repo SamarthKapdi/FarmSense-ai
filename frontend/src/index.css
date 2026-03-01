@@ -1,0 +1,497 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════ */
+/* FarmSense AI — Global Styles                                */
+/* ═══════════════════════════════════════════════════════════ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #081C15;
+  color: #ffffff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #040D0A;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2D6A4F;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #52B788;
+}
+
+/* ── Confidence Ring Animation ────────────────────────── */
+.confidence-ring {
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+
+.confidence-ring-circle {
+  transition: stroke-dashoffset 1.5s ease-in-out;
+  animation: ringFill 1.5s ease-in-out forwards;
+}
+
+@keyframes ringFill {
+  from {
+    stroke-dashoffset: 283;
+  }
+}
+
+/* ── Leaf Pulse Animation ─────────────────────────────── */
+.leaf-pulse {
+  animation: leafGlow 2s ease-in-out infinite;
+}
+
+@keyframes leafGlow {
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px rgba(82, 183, 136, 0.4));
+    transform: scale(1);
+  }
+
+  50% {
+    filter: drop-shadow(0 0 20px rgba(82, 183, 136, 0.8));
+    transform: scale(1.05);
+  }
+}
+
+/* ── Chat Bubbles ─────────────────────────────────────── */
+.chat-bubble-user {
+  background: linear-gradient(135deg, #2D6A4F, #1B4332);
+  border-radius: 20px 20px 4px 20px;
+  padding: 12px 16px;
+  max-width: 80%;
+  margin-left: auto;
+  word-wrap: break-word;
+  animation: slideInRight 0.3s ease-out;
+}
+
+.chat-bubble-ai {
+  background: linear-gradient(135deg, #0a1f16, #0d2b1e);
+  border: 1px solid rgba(82, 183, 136, 0.3);
+  border-radius: 20px 20px 20px 4px;
+  padding: 12px 16px;
+  max-width: 85%;
+  word-wrap: break-word;
+  animation: slideInLeft 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ── Language Pill ─────────────────────────────────────── */
+.lang-pill {
+  padding: 6px 14px;
+  border-radius: 50px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1.5px solid rgba(82, 183, 136, 0.4);
+  color: #52B788;
+  background: transparent;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.lang-pill:hover {
+  border-color: #52B788;
+  background: rgba(82, 183, 136, 0.1);
+  transform: translateY(-1px);
+}
+
+.lang-pill-active {
+  background: linear-gradient(135deg, #52B788, #2D6A4F);
+  color: #040D0A;
+  border-color: #52B788;
+  box-shadow: 0 0 16px rgba(82, 183, 136, 0.35);
+}
+
+/* ── Tab Bar ──────────────────────────────────────────── */
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(4, 13, 10, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(82, 183, 136, 0.15);
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+  z-index: 100;
+}
+
+.tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 16px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 500;
+  border: none;
+  background: none;
+  position: relative;
+}
+
+.tab-item-active {
+  color: #52B788;
+}
+
+.tab-item-active::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 3px;
+  background: #52B788;
+  border-radius: 0 0 3px 3px;
+}
+
+.tab-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+/* ── Disease Card ─────────────────────────────────────── */
+.disease-card {
+  background: linear-gradient(145deg, #0a1f16, #040D0A);
+  border: 1px solid rgba(82, 183, 136, 0.15);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 16px;
+  transition: all 0.3s ease;
+}
+
+.disease-card:hover {
+  border-color: rgba(82, 183, 136, 0.35);
+  box-shadow: 0 4px 24px rgba(82, 183, 136, 0.08);
+}
+
+/* ── Severity Badges ──────────────────────────────────── */
+.severity-severe {
+  background: linear-gradient(135deg, #7f1d1d, #991b1b);
+  color: #fca5a5;
+  padding: 4px 12px;
+  border-radius: 50px;
+  font-size: 12px;
+  font-weight: 600;
+  animation: severePulse 2s ease-in-out infinite;
+}
+
+@keyframes severePulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+  }
+}
+
+.severity-moderate {
+  background: linear-gradient(135deg, #78350f, #92400e);
+  color: #fde68a;
+  padding: 4px 12px;
+  border-radius: 50px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.severity-mild {
+  background: linear-gradient(135deg, #14532d, #166534);
+  color: #86efac;
+  padding: 4px 12px;
+  border-radius: 50px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ── 3 Dots Typing Animation ─────────────────────────── */
+.dot-typing {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 12px 20px;
+}
+
+.dot-typing span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #52B788;
+  animation: dotBounce 1.4s infinite ease-in-out both;
+}
+
+.dot-typing span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.dot-typing span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.dot-typing span:nth-child(3) {
+  animation-delay: 0s;
+}
+
+@keyframes dotBounce {
+
+  0%,
+  80%,
+  100% {
+    transform: scale(0.4);
+    opacity: 0.4;
+  }
+
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ── Loading Spinner ──────────────────────────────────── */
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(82, 183, 136, 0.2);
+  border-top: 3px solid #52B788;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Shimmer / Skeleton ───────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, #0a1f16 25%, #0d2b1e 50%, #0a1f16 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 12px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ── Glassmorphism Utility ────────────────────────────── */
+.glass {
+  background: rgba(4, 13, 10, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(82, 183, 136, 0.1);
+}
+
+/* ── Gradient Text ────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #52B788, #B7E4C7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Fade In Animations ───────────────────────────────── */
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-delay-1 {
+  animation-delay: 0.1s;
+  animation-fill-mode: both;
+}
+
+.fade-in-delay-2 {
+  animation-delay: 0.2s;
+  animation-fill-mode: both;
+}
+
+.fade-in-delay-3 {
+  animation-delay: 0.3s;
+  animation-fill-mode: both;
+}
+
+.fade-in-delay-4 {
+  animation-delay: 0.4s;
+  animation-fill-mode: both;
+}
+
+/* ── Landing Page — Floating Leaf Particles ───────────── */
+.leaf-particles {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.leaf-particle {
+  position: absolute;
+  font-size: 20px;
+  opacity: 0.15;
+  animation: leafFloat linear infinite;
+}
+
+.leaf-particle-0 {
+  left: 5%;
+  top: -5%;
+  animation-duration: 18s;
+  animation-delay: 0s;
+  font-size: 16px;
+}
+
+.leaf-particle-1 {
+  left: 15%;
+  top: -5%;
+  animation-duration: 22s;
+  animation-delay: 2s;
+  font-size: 22px;
+}
+
+.leaf-particle-2 {
+  left: 30%;
+  top: -5%;
+  animation-duration: 20s;
+  animation-delay: 4s;
+  font-size: 14px;
+}
+
+.leaf-particle-3 {
+  left: 50%;
+  top: -5%;
+  animation-duration: 17s;
+  animation-delay: 1s;
+  font-size: 24px;
+}
+
+.leaf-particle-4 {
+  left: 65%;
+  top: -5%;
+  animation-duration: 24s;
+  animation-delay: 3s;
+  font-size: 18px;
+}
+
+.leaf-particle-5 {
+  left: 80%;
+  top: -5%;
+  animation-duration: 19s;
+  animation-delay: 5s;
+  font-size: 20px;
+}
+
+.leaf-particle-6 {
+  left: 40%;
+  top: -5%;
+  animation-duration: 21s;
+  animation-delay: 7s;
+  font-size: 16px;
+}
+
+.leaf-particle-7 {
+  left: 90%;
+  top: -5%;
+  animation-duration: 16s;
+  animation-delay: 6s;
+  font-size: 12px;
+}
+
+@keyframes leafFloat {
+  0% {
+    transform: translateY(-10vh) rotate(0deg) translateX(0);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 0.15;
+  }
+
+  90% {
+    opacity: 0.15;
+  }
+
+  100% {
+    transform: translateY(110vh) rotate(360deg) translateX(80px);
+    opacity: 0;
+  }
+}
+
+/* ── No Scrollbar Utility ─────────────────────────────── */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
