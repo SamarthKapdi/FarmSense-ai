@@ -28,7 +28,7 @@ export default function LandingPage({ onNavigate }) {
                 <h1 className="text-4xl font-extrabold mb-3 leading-tight">
                     <span className="gradient-text">FarmSense AI</span>
                 </h1>
-                <p className="text-2xl font-bold text-white mb-3 leading-snug">
+                <p className="text-2xl font-bold text-[var(--text-primary)] mb-3 leading-snug">
                     A Crop Doctor in Every Farmer's Pocket
                 </p>
                 <p className="text-gray-400 text-sm mb-8 max-w-xs mx-auto">
@@ -72,7 +72,7 @@ export default function LandingPage({ onNavigate }) {
 
             {/* Feature Cards */}
             <section className="relative z-10 px-5 pb-12 max-w-lg mx-auto">
-                <h2 className="text-xl font-bold text-white text-center mb-6">
+                <h2 className="text-xl font-bold text-[var(--text-primary)] text-center mb-6">
                     Why Farmers Love FarmSense AI
                 </h2>
                 <div className="space-y-4">
@@ -84,7 +84,7 @@ export default function LandingPage({ onNavigate }) {
                         >
                             <div className="text-3xl flex-shrink-0">{f.icon}</div>
                             <div>
-                                <h3 className="text-white font-bold text-sm">{f.title}</h3>
+                                <h3 className="text-[var(--text-primary)] font-bold text-sm">{f.title}</h3>
                                 <p className="text-gray-400 text-xs mt-1">{f.desc}</p>
                             </div>
                         </div>
@@ -94,7 +94,7 @@ export default function LandingPage({ onNavigate }) {
 
             {/* How It Works */}
             <section className="relative z-10 px-5 pb-12 max-w-lg mx-auto">
-                <h2 className="text-xl font-bold text-white text-center mb-6">
+                <h2 className="text-xl font-bold text-[var(--text-primary)] text-center mb-6">
                     How It Works
                 </h2>
                 <div className="space-y-1">
@@ -107,7 +107,7 @@ export default function LandingPage({ onNavigate }) {
                                 </div>
                                 <div className="text-3xl flex-shrink-0">{step.icon}</div>
                                 <div>
-                                    <h3 className="text-white font-bold text-sm">{step.title}</h3>
+                                    <h3 className="text-[var(--text-primary)] font-bold text-sm">{step.title}</h3>
                                     <p className="text-gray-400 text-xs">{step.desc}</p>
                                 </div>
                             </div>

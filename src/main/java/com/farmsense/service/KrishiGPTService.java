@@ -4,6 +4,8 @@ import com.farmsense.model.dto.DetectionResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -14,6 +16,7 @@ import java.util.Map;
 public class KrishiGPTService {
 
         private final ChatClient chatClient;
+        private final ChatMemory chatMemory;
 
         private static final Map<String, String> LANGUAGE_NAMES = Map.of(
                         "en", "English",
@@ -23,7 +26,7 @@ public class KrishiGPTService {
                         "mr", "Marathi",
                         "pa", "Punjabi");
 
-        public String askKrishiGPT(String question, String crop, String langCode) {
+        public String askKrishiGPT(String userId, String question, String crop, String langCode) {
                 try {
                         String language = LANGUAGE_NAMES.getOrDefault(langCode, "English");
 
@@ -42,20 +45,23 @@ public class KrishiGPTService {
                                         - Give immediate actionable steps not theoretical advice
                                         """.formatted(language, crop);
 
+                        String conversationId = (userId != null && !userId.isBlank()) ? userId : "anonymous";
+
                         String response = chatClient.prompt()
                                         .system(systemPrompt)
                                         .user(question)
+                                        .advisors(new MessageChatMemoryAdvisor(chatMemory, conversationId, 10))
+                                        .functions("fetchMarketPrice")
                                         .call()
                                         .content();
 
-                        log.info("KrishiGPT responded in {} for crop {}", language, crop);
+                        log.info("KrishiGPT (User: {}) responded in {} for crop {}", conversationId, language, crop);
                         return response;
 
                 } catch (Exception e) {
                         log.error("KrishiGPT failed: {}", e.getMessage(), e);
                         return "I am sorry, I could not process your question right now. " +
-                                        "Please check if Ollama is running with llama3 model. " +
-                                        "Try again in a few moments. Meanwhile, consult your local " +
+                                        "Please try again in a few moments. Meanwhile, consult your local " +
                                         "Krishi Vigyan Kendra (KVK) for immediate help.";
                 }
         }

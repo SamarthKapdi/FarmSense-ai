@@ -94,7 +94,7 @@ export default function HistoryPage({ farmerId, language, token }) {
                 <div className="flex flex-col items-center justify-center 
                         py-20 text-center">
                     <div className="text-6xl mb-4 leaf-pulse">🌾</div>
-                    <h3 className="text-xl font-bold text-white mb-2">
+                    <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">
                         No scans yet!
                     </h3>
                     <p className="text-gray-400 text-sm max-w-xs">
@@ -125,7 +125,7 @@ export default function HistoryPage({ farmerId, language, token }) {
                             >
                                 <div className="flex items-start justify-between mb-2">
                                     <div className="flex-1">
-                                        <h4 className="text-white font-bold text-sm">
+                                        <h4 className="text-[var(--text-primary)] font-bold text-sm">
                                             {report.diseaseName || "Unknown"}
                                         </h4>
                                         <div className="flex items-center gap-2 mt-1">

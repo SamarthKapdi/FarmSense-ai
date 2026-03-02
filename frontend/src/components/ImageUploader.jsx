@@ -119,7 +119,7 @@ export default function ImageUploader({ language, farmerId, token, onResult, onL
                                 setImagePreview(null);
                             }}
                             className="absolute top-2 right-2 bg-red-900/80 hover:bg-red-800 
-                         text-white rounded-full w-8 h-8 flex items-center 
+                         text-[var(--text-primary)] rounded-full w-8 h-8 flex items-center 
                          justify-center text-sm transition-colors"
                         >
                             ✕
@@ -154,7 +154,7 @@ export default function ImageUploader({ language, farmerId, token, onResult, onL
                     value={selectedCrop}
                     onChange={(e) => setSelectedCrop(e.target.value)}
                     className="w-full bg-darker border border-gray-700 rounded-xl 
-                     px-4 py-3 text-white focus:outline-none 
+                     px-4 py-3 text-[var(--text-primary)] focus:outline-none 
                      focus:border-accent transition-colors appearance-none
                      cursor-pointer"
                     style={{
@@ -178,7 +178,7 @@ export default function ImageUploader({ language, farmerId, token, onResult, onL
                 className={`
           w-full py-4 rounded-xl font-bold text-lg transition-all duration-300
           ${selectedImage && !isLoading
-                        ? "bg-gradient-to-r from-primary to-accent text-white hover:shadow-lg hover:shadow-accent/20 active:scale-[0.98]"
+                        ? "bg-gradient-to-r from-primary to-accent text-[var(--text-primary)] hover:shadow-lg hover:shadow-accent/20 active:scale-[0.98]"
                         : "bg-gray-800 text-gray-500 cursor-not-allowed"
                     }
         `}

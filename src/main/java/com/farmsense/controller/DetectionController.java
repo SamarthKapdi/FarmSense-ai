@@ -79,7 +79,7 @@ public class DetectionController {
             String userName = (String) request.getAttribute("userName");
 
             String answer = krishiGPTService.askKrishiGPT(
-                    chatRequest.getQuestion(), chatRequest.getCrop(), chatRequest.getLanguage());
+                    userId, chatRequest.getQuestion(), chatRequest.getCrop(), chatRequest.getLanguage());
 
             ChatResponse response = ChatResponse.builder()
                     .answer(answer)

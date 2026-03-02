@@ -165,7 +165,7 @@ export default function KrishiGPTChat({ language, farmerId, token, onLanguageCha
                         value={selectedCrop}
                         onChange={(e) => setSelectedCrop(e.target.value)}
                         className="bg-darker border border-gray-700 rounded-lg 
-                       px-3 py-1.5 text-sm text-white focus:outline-none 
+                       px-3 py-1.5 text-sm text-[var(--text-primary)] focus:outline-none 
                        focus:border-accent"
                     >
                         {CROPS.map((crop) => (
@@ -271,7 +271,7 @@ export default function KrishiGPTChat({ language, farmerId, token, onLanguageCha
                         }
                         disabled={isLoading}
                         className="flex-1 bg-darker border border-gray-700 rounded-xl 
-                       px-4 py-3 text-sm text-white placeholder-gray-500
+                       px-4 py-3 text-sm text-[var(--text-primary)] placeholder-gray-500
                        focus:outline-none focus:border-accent transition-colors
                        disabled:opacity-50"
                     />

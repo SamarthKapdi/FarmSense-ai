@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -11,6 +12,7 @@ import HistoryPage from "./components/HistoryPage";
 
 function AppContent() {
     const { user, token, isAuthenticated, logout } = useAuth();
+    const { theme, toggleTheme } = useTheme();
     const [page, setPage] = useState("landing");
     const [language, setLanguage] = useState("en");
     const [activeTab, setActiveTab] = useState("detect");
@@ -66,12 +68,19 @@ function AppContent() {
                     <span className="gradient-text">FarmSense AI</span>
                 </h1>
                 <div className="flex items-center gap-3">
-                    <span className="text-gray-400 text-xs hidden sm:inline">
+                    <button
+                        onClick={toggleTheme}
+                        className="text-gray-400 hover:text-accent transition-colors p-1"
+                        title="Toggle Theme"
+                    >
+                        {theme === 'dark' ? '☀️' : '🌙'}
+                    </button>
+                    <span className="text-gray-500 text-xs hidden sm:inline border-l border-gray-700 pl-3">
                         {user?.fullName}
                     </span>
                     <button
                         onClick={handleLogout}
-                        className="text-gray-500 hover:text-red-400 text-xs font-medium transition-colors"
+                        className="text-gray-500 hover:text-red-400 text-xs font-medium transition-colors ml-1"
                     >
                         Logout
                     </button>
@@ -139,8 +148,10 @@ function AppContent() {
 
 export default function App() {
     return (
-        <AuthProvider>
-            <AppContent />
-        </AuthProvider>
+        <ThemeProvider>
+            <AuthProvider>
+                <AppContent />
+            </AuthProvider>
+        </ThemeProvider>
     );
 }

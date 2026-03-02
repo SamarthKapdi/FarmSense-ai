@@ -22,58 +22,59 @@ import java.util.Map;
 @Slf4j
 public class ChatController {
 
-    private final KrishiGPTService krishiGPTService;
-    private final ChatHistoryRepository chatHistoryRepository;
-    private final ActivityService activityService;
+        private final KrishiGPTService krishiGPTService;
+        private final ChatHistoryRepository chatHistoryRepository;
+        private final ActivityService activityService;
 
-    @PostMapping("/ask")
-    public ResponseEntity<?> askKrishiGPT(@RequestBody ChatRequest request,
-            HttpServletRequest httpRequest) {
-        try {
-            String userId = (String) httpRequest.getAttribute("userId");
-            String userEmail = (String) httpRequest.getAttribute("userEmail");
-            String userName = (String) httpRequest.getAttribute("userName");
+        @PostMapping("/ask")
+        public ResponseEntity<?> askKrishiGPT(@RequestBody ChatRequest request,
+                        HttpServletRequest httpRequest) {
+                try {
+                        String userId = (String) httpRequest.getAttribute("userId");
+                        String userEmail = (String) httpRequest.getAttribute("userEmail");
+                        String userName = (String) httpRequest.getAttribute("userName");
 
-            log.info("Chat — Crop: {}, Language: {}, User: {}", request.getCrop(), request.getLanguage(), userEmail);
+                        log.info("Chat — Crop: {}, Language: {}, User: {}", request.getCrop(), request.getLanguage(),
+                                        userEmail);
 
-            String answer = krishiGPTService.askKrishiGPT(
-                    request.getQuestion(), request.getCrop(), request.getLanguage());
+                        String answer = krishiGPTService.askKrishiGPT(
+                                        userId, request.getQuestion(), request.getCrop(), request.getLanguage());
 
-            if (userId != null) {
-                ChatHistory chatHistory = ChatHistory.builder()
-                        .userId(userId)
-                        .userEmail(userEmail)
-                        .question(request.getQuestion())
-                        .answer(answer)
-                        .crop(request.getCrop())
-                        .language(request.getLanguage())
-                        .build();
-                chatHistoryRepository.save(chatHistory);
+                        if (userId != null) {
+                                ChatHistory chatHistory = ChatHistory.builder()
+                                                .userId(userId)
+                                                .userEmail(userEmail)
+                                                .question(request.getQuestion())
+                                                .answer(answer)
+                                                .crop(request.getCrop())
+                                                .language(request.getLanguage())
+                                                .build();
+                                chatHistoryRepository.save(chatHistory);
 
-                activityService.logActivity(userId, userEmail, userName,
-                        "CHAT", "Chat about " + request.getCrop(), null);
-            }
+                                activityService.logActivity(userId, userEmail, userName,
+                                                "CHAT", "Chat about " + request.getCrop(), null);
+                        }
 
-            ChatResponse response = ChatResponse.builder()
-                    .answer(answer)
-                    .language(request.getLanguage())
-                    .timestamp(LocalDateTime.now())
-                    .build();
+                        ChatResponse response = ChatResponse.builder()
+                                        .answer(answer)
+                                        .language(request.getLanguage())
+                                        .timestamp(LocalDateTime.now())
+                                        .build();
 
-            return ResponseEntity.ok(response);
+                        return ResponseEntity.ok(response);
 
-        } catch (Exception e) {
-            log.error("Chat error: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError()
-                    .body(Map.of("error", "Chat failed: " + e.getMessage()));
+                } catch (Exception e) {
+                        log.error("Chat error: {}", e.getMessage(), e);
+                        return ResponseEntity.internalServerError()
+                                        .body(Map.of("error", "Chat failed: " + e.getMessage()));
+                }
         }
-    }
 
-    @GetMapping("/health")
-    public ResponseEntity<?> health() {
-        return ResponseEntity.ok(Map.of(
-                "service", "KrishiGPT Chat",
-                "status", "Running",
-                "timestamp", LocalDateTime.now().toString()));
-    }
+        @GetMapping("/health")
+        public ResponseEntity<?> health() {
+                return ResponseEntity.ok(Map.of(
+                                "service", "KrishiGPT Chat",
+                                "status", "Running",
+                                "timestamp", LocalDateTime.now().toString()));
+        }
 }

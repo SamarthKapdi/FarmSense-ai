@@ -79,7 +79,7 @@ export default function TreatmentTabs({ result, language, farmerId, token }) {
               justify-center gap-1.5
               ${activeTab === tab.id
                                 ? "bg-gradient-to-r from-accent to-primary text-dark"
-                                : "text-gray-400 hover:text-white"
+                                : "text-gray-400 hover:text-[var(--text-primary)]"
                             }
             `}
                     >
@@ -156,7 +156,7 @@ export default function TreatmentTabs({ result, language, farmerId, token }) {
             {showPlan && planDays.length > 0 && (
                 <div className="mt-4 bg-darker/80 border border-green-900/40 
                         rounded-2xl p-4 fade-in">
-                    <h4 className="text-white font-bold mb-3 flex items-center gap-2">
+                    <h4 className="text-[var(--text-primary)] font-bold mb-3 flex items-center gap-2">
                         <span>📋</span> 7-Day Treatment Plan
                     </h4>
                     <div className="space-y-2">

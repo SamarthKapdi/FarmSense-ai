@@ -56,6 +56,24 @@
             <artifactId>spring-ai-ollama-spring-boot-starter</artifactId>
         </dependency>
 
+        <!-- Deep Java Library (DJL) -->
+        <dependency>
+            <groupId>ai.djl</groupId>
+            <artifactId>api</artifactId>
+            <version>0.26.0</version>
+        </dependency>
+        <dependency>
+            <groupId>ai.djl.pytorch</groupId>
+            <artifactId>pytorch-engine</artifactId>
+            <version>0.26.0</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>ai.djl.pytorch</groupId>
+            <artifactId>pytorch-model-zoo</artifactId>
+            <version>0.26.0</version>
+        </dependency>
+
         <!-- JWT JJWT 0.12.3 -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
@@ -129,6 +147,9 @@
                 <configuration>
                     <source>21</source>
                     <target>21</target>
+                    <compilerArgs>
+                        <arg>--enable-preview</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
             <plugin>

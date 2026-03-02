@@ -131,7 +131,7 @@ export default function ActivityPage() {
                         flex items-center justify-center gap-1 min-w-[70px]
                         ${activeTab === tab.id
                                 ? "bg-gradient-to-r from-accent to-primary text-dark"
-                                : "text-gray-400 hover:text-white"
+                                : "text-gray-400 hover:text-[var(--text-primary)]"
                             }`}
                     >
                         <span>{tab.icon}</span>
@@ -145,7 +145,7 @@ export default function ActivityPage() {
                 <div className="space-y-4 fade-in">
                     {/* Welcome Card */}
                     <div className="disease-card bg-gradient-to-br from-primary/30 to-darker">
-                        <h3 className="text-white text-lg font-bold">
+                        <h3 className="text-[var(--text-primary)] text-lg font-bold">
                             Welcome back, {user?.fullName || "Farmer"}! 👨‍🌾
                         </h3>
                         <p className="text-gray-400 text-xs mt-1">
@@ -176,17 +176,17 @@ export default function ActivityPage() {
                     <div className="grid grid-cols-2 gap-3">
                         <div className="disease-card">
                             <p className="text-gray-500 text-xs mb-1">🦠 Top Disease</p>
-                            <p className="text-white font-bold text-sm">{stats?.mostCommonDisease || "None"}</p>
+                            <p className="text-[var(--text-primary)] font-bold text-sm">{stats?.mostCommonDisease || "None"}</p>
                         </div>
                         <div className="disease-card">
                             <p className="text-gray-500 text-xs mb-1">🌱 Top Crop</p>
-                            <p className="text-white font-bold text-sm">{stats?.mostScannedCrop || "None"}</p>
+                            <p className="text-[var(--text-primary)] font-bold text-sm">{stats?.mostScannedCrop || "None"}</p>
                         </div>
                     </div>
 
                     {/* Recent Activity Feed */}
                     <div className="disease-card">
-                        <h4 className="text-white font-bold mb-3 text-sm">⚡ Recent Activity</h4>
+                        <h4 className="text-[var(--text-primary)] font-bold mb-3 text-sm">⚡ Recent Activity</h4>
                         {activities.length === 0 ? (
                             <p className="text-gray-500 text-sm text-center py-4">No activity yet</p>
                         ) : (
@@ -211,7 +211,7 @@ export default function ActivityPage() {
             {/* ── TAB 2: Scan History ── */}
             {activeTab === "scans" && (
                 <div className="space-y-3 fade-in">
-                    <h3 className="text-white font-bold text-sm">🔍 Scan History</h3>
+                    <h3 className="text-[var(--text-primary)] font-bold text-sm">🔍 Scan History</h3>
 
                     {/* Filters */}
                     <div className="flex gap-2">
@@ -221,13 +221,13 @@ export default function ActivityPage() {
                             onChange={(e) => setScanFilter(e.target.value)}
                             placeholder="Search disease..."
                             className="flex-1 bg-darker border border-gray-700 rounded-lg px-3 py-2 
-                         text-sm text-white placeholder-gray-600 focus:outline-none focus:border-accent"
+                         text-sm text-[var(--text-primary)] placeholder-gray-600 focus:outline-none focus:border-accent"
                         />
                         <select
                             value={severityFilter}
                             onChange={(e) => setSeverityFilter(e.target.value)}
                             className="bg-darker border border-gray-700 rounded-lg px-2 py-2 
-                         text-sm text-white focus:outline-none focus:border-accent"
+                         text-sm text-[var(--text-primary)] focus:outline-none focus:border-accent"
                         >
                             <option value="All">All</option>
                             <option value="Mild">Mild</option>
@@ -250,7 +250,7 @@ export default function ActivityPage() {
                                 >
                                     <div className="flex items-start justify-between">
                                         <div>
-                                            <h4 className="text-white font-bold text-sm">{scan.diseaseName}</h4>
+                                            <h4 className="text-[var(--text-primary)] font-bold text-sm">{scan.diseaseName}</h4>
                                             <div className="flex items-center gap-2 mt-1">
                                                 {scan.cropName && (
                                                     <span className="bg-primary/40 text-accent text-xs px-2 py-0.5 rounded-full">
@@ -290,7 +290,7 @@ export default function ActivityPage() {
             {/* ── TAB 3: Chat History ── */}
             {activeTab === "chats" && (
                 <div className="space-y-3 fade-in">
-                    <h3 className="text-white font-bold text-sm">💬 Chat History</h3>
+                    <h3 className="text-[var(--text-primary)] font-bold text-sm">💬 Chat History</h3>
 
                     {chats.length === 0 ? (
                         <div className="text-center py-12">
@@ -304,7 +304,7 @@ export default function ActivityPage() {
                                     onClick={() => setExpandedChat(expandedChat === index ? null : index)}
                                     className="w-full text-left"
                                 >
-                                    <p className="text-white text-sm font-medium truncate">{chat.question}</p>
+                                    <p className="text-[var(--text-primary)] text-sm font-medium truncate">{chat.question}</p>
                                     <div className="flex items-center gap-2 mt-1">
                                         {chat.crop && (
                                             <span className="bg-primary/40 text-accent text-xs px-2 py-0.5 rounded-full">
@@ -340,7 +340,7 @@ export default function ActivityPage() {
             {/* ── TAB 4: Analytics ── */}
             {activeTab === "analytics" && (
                 <div className="space-y-5 fade-in">
-                    <h3 className="text-white font-bold text-sm">📈 Analytics</h3>
+                    <h3 className="text-[var(--text-primary)] font-bold text-sm">📈 Analytics</h3>
 
                     {scans.length === 0 && chats.length === 0 ? (
                         <div className="text-center py-12">
@@ -352,7 +352,7 @@ export default function ActivityPage() {
                             {/* Disease Breakdown */}
                             {topDiseases.length > 0 && (
                                 <div className="disease-card">
-                                    <h4 className="text-white font-bold text-sm mb-3">🦠 Disease Breakdown</h4>
+                                    <h4 className="text-[var(--text-primary)] font-bold text-sm mb-3">🦠 Disease Breakdown</h4>
                                     <div className="space-y-2.5">
                                         {topDiseases.map(([name, count]) => (
                                             <div key={name}>
@@ -375,7 +375,7 @@ export default function ActivityPage() {
                             {/* Crop Activity */}
                             {topCrops.length > 0 && (
                                 <div className="disease-card">
-                                    <h4 className="text-white font-bold text-sm mb-3">🌾 Crop Activity</h4>
+                                    <h4 className="text-[var(--text-primary)] font-bold text-sm mb-3">🌾 Crop Activity</h4>
                                     <div className="space-y-2.5">
                                         {topCrops.map(([name, count]) => (
                                             <div key={name}>
@@ -398,7 +398,7 @@ export default function ActivityPage() {
                             {/* Language Usage */}
                             {Object.keys(langBreakdown).length > 0 && (
                                 <div className="disease-card">
-                                    <h4 className="text-white font-bold text-sm mb-3">🌐 Language Usage</h4>
+                                    <h4 className="text-[var(--text-primary)] font-bold text-sm mb-3">🌐 Language Usage</h4>
                                     <div className="flex flex-wrap gap-2">
                                         {Object.entries(langBreakdown).map(([code, count]) => (
                                             <span

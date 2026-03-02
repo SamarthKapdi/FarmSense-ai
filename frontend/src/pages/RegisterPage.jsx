@@ -98,7 +98,7 @@ export default function RegisterPage({ onNavigate }) {
                             required
                             placeholder="Rajesh Kumar"
                             className="w-full bg-darker border border-gray-700 rounded-xl px-4 py-3.5
-                         text-white placeholder-gray-600 focus:outline-none
+                         text-[var(--text-primary)] placeholder-gray-600 focus:outline-none
                          focus:border-accent transition-colors"
                         />
                     </div>
@@ -115,7 +115,7 @@ export default function RegisterPage({ onNavigate }) {
                             required
                             placeholder="farmer@email.com"
                             className="w-full bg-darker border border-gray-700 rounded-xl px-4 py-3.5
-                         text-white placeholder-gray-600 focus:outline-none
+                         text-[var(--text-primary)] placeholder-gray-600 focus:outline-none
                          focus:border-accent transition-colors"
                         />
                     </div>
@@ -132,7 +132,7 @@ export default function RegisterPage({ onNavigate }) {
                             required
                             placeholder="Min 8 characters"
                             className="w-full bg-darker border border-gray-700 rounded-xl px-4 py-3.5
-                         text-white placeholder-gray-600 focus:outline-none
+                         text-[var(--text-primary)] placeholder-gray-600 focus:outline-none
                          focus:border-accent transition-colors pr-12"
                         />
                         <button
@@ -176,7 +176,7 @@ export default function RegisterPage({ onNavigate }) {
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             required
                             placeholder="Re-enter your password"
-                            className={`w-full bg-darker rounded-xl px-4 py-3.5 text-white 
+                            className={`w-full bg-darker rounded-xl px-4 py-3.5 text-[var(--text-primary)] 
                          placeholder-gray-600 focus:outline-none transition-colors border ${passwordsMismatch
                                     ? "border-red-500 focus:border-red-400"
                                     : passwordsMatch

@@ -76,11 +76,11 @@ export default function ResultsDashboard({ result, language, farmerId, token, on
             <div className="disease-card fade-in fade-in-delay-1">
                 <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                        <h3 className="text-white text-xl font-bold leading-tight">
+                        <h3 className="text-[var(--text-primary)] text-xl font-bold leading-tight">
                             {result.diseaseName || "Unknown Disease"}
                         </h3>
                         {result.cropName && (
-                            <span className="inline-block mt-2 bg-primary/60 text-white 
+                            <span className="inline-block mt-2 bg-primary/60 text-[var(--text-primary)] 
                              text-xs px-3 py-1 rounded-full font-medium">
                                 🌱 {result.cropName}
                             </span>
@@ -120,7 +120,7 @@ export default function ResultsDashboard({ result, language, farmerId, token, on
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
                         <div className="text-center">
-                            <span className="text-2xl font-extrabold text-white">
+                            <span className="text-2xl font-extrabold text-[var(--text-primary)]">
                                 {result.confidence || 0}
                             </span>
                             <span className="text-xs text-gray-400 block">%</span>
@@ -129,7 +129,7 @@ export default function ResultsDashboard({ result, language, farmerId, token, on
                 </div>
                 <div>
                     <p className="text-gray-400 text-sm mb-1">AI Confidence</p>
-                    <p className="text-white font-semibold">
+                    <p className="text-[var(--text-primary)] font-semibold">
                         {result.confidence >= 70 ? "High Confidence" :
                             result.confidence >= 40 ? "Moderate Confidence" :
                                 "Low Confidence"}
@@ -166,7 +166,7 @@ export default function ResultsDashboard({ result, language, farmerId, token, on
             {/* Card 4 — Symptoms */}
             {result.symptoms && result.symptoms.length > 0 && (
                 <div className="disease-card fade-in fade-in-delay-4">
-                    <h4 className="text-white font-bold mb-3 flex items-center gap-2">
+                    <h4 className="text-[var(--text-primary)] font-bold mb-3 flex items-center gap-2">
                         <span>⚠️</span> Symptoms Detected
                     </h4>
                     <div className="space-y-3">

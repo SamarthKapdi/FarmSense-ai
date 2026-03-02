@@ -65,7 +65,7 @@ export default function LoginPage({ onNavigate }) {
                             required
                             placeholder="farmer@email.com"
                             className="w-full bg-darker border border-gray-700 rounded-xl px-4 py-3.5
-                         text-white placeholder-gray-600 focus:outline-none
+                         text-[var(--text-primary)] placeholder-gray-600 focus:outline-none
                          focus:border-accent transition-colors"
                         />
                     </div>
@@ -82,7 +82,7 @@ export default function LoginPage({ onNavigate }) {
                             required
                             placeholder="Enter your password"
                             className="w-full bg-darker border border-gray-700 rounded-xl px-4 py-3.5
-                         text-white placeholder-gray-600 focus:outline-none
+                         text-[var(--text-primary)] placeholder-gray-600 focus:outline-none
                          focus:border-accent transition-colors pr-12"
                         />
                         <button
