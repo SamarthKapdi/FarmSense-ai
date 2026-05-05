@@ -5,7 +5,7 @@
 <br/>
 
 [![Java](https://img.shields.io/badge/Java-26-FF6B35?style=for-the-badge&logo=openjdk&logoColor=white)](https://adoptium.net/)
-[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.2.3-6DB33F?style=for-the-badge&logo=spring&logoColor=white)](https://spring.io/projects/spring-boot)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.4.5-6DB33F?style=for-the-badge&logo=spring&logoColor=white)](https://spring.io/projects/spring-boot)
 [![Spring AI](https://img.shields.io/badge/Spring_AI-1.0.0--M6-6DB33F?style=for-the-badge&logo=spring&logoColor=white)](https://spring.io/projects/spring-ai)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
@@ -67,7 +67,7 @@ Most farmers can't afford agronomists. Crop diseases spread faster than help arr
 
 ```
 ┌─────────────────────────┐        ┌──────────────────────────────────┐
-│   React 18 + Tailwind   │◄──────►│       Spring Boot 3.2.3          │
+│   React 18 + Tailwind   │◄──────►│       Spring Boot 3.4.5          │
 │   Port: 3000            │  REST  │       Java 26 · Port: 8080        │
 │   Mobile-first UI       │  JWT   │       Spring AI · Spring Security │
 └─────────────────────────┘        └──────────┬──────────┬────────────┘
@@ -90,9 +90,9 @@ React frontend (mobile-first)
        ↓
 Spring Boot REST API (JWT-secured)
        ↓
-DJL Disease Detection ──→ Result + Confidence + Yield Loss
+Spring AI Vision (Ollama) ──→ Result + Confidence + Yield Loss
        ↓
-Spring AI → Ollama LLaMA3 ──→ Treatment Plan (3 types)
+Spring AI → Ollama LLaMA 3 + LLaMA 3.2 Vision ──→ Treatment Plan (3 types)
        ↓
 PostgreSQL ──→ Save to user history + activity log
        ↓
@@ -108,16 +108,16 @@ Dashboard → Analytics + Charts
 | Layer           | Technology             | Version      | Purpose                  |
 | --------------- | ---------------------- | ------------ | ------------------------ |
 | **Runtime**     | Java                   | 26           | Backend runtime          |
-| **Framework**   | Spring Boot            | 3.2.3        | REST API server          |
+| **Framework**   | Spring Boot            | 3.4.5        | REST API server          |
 | **AI/LLM**      | Spring AI + Ollama     | 1.0.0-M6     | LLM integration          |
 | **AI Model**    | LLaMA 3                | 8B Q4_0      | Disease analysis + chat  |
 | **Security**    | Spring Security + JJWT | 6.2 / 0.12.3 | JWT auth, BCrypt         |
-| **Database**    | PostgreSQL             | 16           | Persistent storage       |
+| **Database**    | PostgreSQL             | 16.13        | Persistent storage       |
 | **ORM**         | Hibernate + JPA        | 6.4          | Database mapping         |
 | **Frontend**    | React                  | 18           | UI framework             |
 | **Styling**     | Tailwind CSS           | 3            | Utility-first CSS        |
-| **Build**       | Maven                  | 3.9+         | Backend build tool       |
-| **Package**     | npm                    | 18+          | Frontend package manager |
+| **Build**       | Maven                  | 3.9.15       | Backend build tool       |
+| **Package**     | npm                    | 11.9.0       | Frontend package manager |
 | **Translation** | LibreTranslate         | Latest       | Multilingual (optional)  |
 
 </div>
@@ -129,11 +129,12 @@ Dashboard → Analytics + Charts
 Before running FarmSense AI, ensure you have:
 
 ```bash
-✅ Java 26+         → https://adoptium.net/
-✅ Maven 3.9+       → https://maven.apache.org/
-✅ Node.js 18+      → https://nodejs.org/
-✅ PostgreSQL 16    → https://www.postgresql.org/download/
-✅ Ollama           → https://ollama.com/download
+✅ Java 26         → https://adoptium.net/
+✅ Maven 3.9.15    → https://maven.apache.org/
+✅ Node.js 24.14.0 → https://nodejs.org/
+✅ npm 11.9.0      → https://www.npmjs.com/
+✅ PostgreSQL 16.13→ https://www.postgresql.org/download/
+✅ Ollama 0.23.0   → https://ollama.com/download
 ```
 
 ---
@@ -144,7 +145,7 @@ Before running FarmSense AI, ensure you have:
 
 ```bash
 git clone https://github.com/SamarthKapdi/FarmSense-ai.git
-cd FarmSense-ai/farmsense-ai
+cd farmsense-ai
 ```
 
 ### 2️⃣ Setup Database
@@ -158,6 +159,7 @@ psql -U postgres -c "CREATE DATABASE farmsense;"
 
 ```bash
 ollama pull llama3
+ollama pull llama3.2-vision
 ```
 
 ### 4️⃣ Configure Application
@@ -194,7 +196,7 @@ mvn clean spring-boot:run
 cd farmsense-ai/frontend
 npm install
 npm start
-# ✅ Opens at http://localhost:3000
+# ✅ Opens at http://localhost:3000 (or the next available port if 3000 is busy)
 ```
 
 ### 6️⃣ Open the App
@@ -202,6 +204,8 @@ npm start
 🌐 **[http://localhost:3000](http://localhost:3000)**
 
 > Register with your email → set a password → start detecting crop diseases instantly!
+
+> Dev profile users: `demo@farmsense.com / farm1234` and `admin@farmsense.com / admin1234`
 
 ---
 
@@ -236,20 +240,30 @@ npm start
 
 ### 🌾 Farm Detection (🔒 Requires JWT)
 
-| Method | Endpoint                     | Description                             |
-| ------ | ---------------------------- | --------------------------------------- |
-| `POST` | `/api/farm/detect`           | Upload image → disease detection result |
-| `POST` | `/api/farm/ask`              | Ask KrishiGPT a farming question        |
-| `POST` | `/api/farm/treatment-plan`   | Generate 7-day treatment plan           |
-| `GET`  | `/api/farm/history/{userId}` | Get user's scan history                 |
-| `GET`  | `/api/farm/stats/{userId}`   | Get aggregate scan statistics           |
-| `GET`  | `/api/farm/health`           | Health check (public)                   |
+| Method | Endpoint                   | Description                             |
+| ------ | -------------------------- | --------------------------------------- |
+| `POST` | `/api/farm/detect`         | Upload image → disease detection result |
+| `POST` | `/api/farm/ask`            | Ask KrishiGPT a farming question        |
+| `POST` | `/api/farm/treatment-plan` | Generate 7-day treatment plan           |
+| `GET`  | `/api/farm/history/me`     | Get authenticated user's scan history   |
+| `GET`  | `/api/farm/stats/me`       | Get authenticated user's scan stats     |
+| `GET`  | `/api/farm/health`         | Health check (public)                   |
+
+### 🌦️ Weather & Farm Profiles
+
+| Method   | Endpoint                   | Description                     |
+| -------- | -------------------------- | ------------------------------- |
+| `GET`    | `/api/weather?city=Mumbai` | Weather data and disease alerts |
+| `GET`    | `/api/farm-profile`        | List saved farm profiles        |
+| `POST`   | `/api/farm-profile`        | Create a farm profile           |
+| `PUT`    | `/api/farm-profile/{id}`   | Update a farm profile           |
+| `DELETE` | `/api/farm-profile/{id}`   | Delete a farm profile           |
 
 ### 💬 Chat (🔒 Requires JWT)
 
 | Method | Endpoint        | Description         |
 | ------ | --------------- | ------------------- |
-| `POST` | `/api/chat/ask` | Chat with KrishiGPT |
+| `POST` | `/api/farm/ask` | Chat with KrishiGPT |
 
 ### 👤 User Data (🔒 Requires JWT)
 
@@ -340,54 +354,62 @@ POST /api/auth/register                POST /api/auth/login
 ## 🏗️ Project Structure
 
 ```
-FarmSense-ai/
-└── farmsense-ai/
-    ├── src/main/java/com/farmsense/
-    │   ├── FarmSenseApplication.java         # Main entry point
-    │   ├── config/
-    │   │   ├── SecurityConfig.java           # JWT + BCrypt config
-    │   │   ├── JwtAuthFilter.java            # Token validation filter
-    │   │   └── CorsConfig.java               # CORS settings
-    │   ├── controller/
-    │   │   ├── AuthController.java           # /api/auth/* endpoints
-    │   │   ├── DetectionController.java      # /api/farm/* endpoints
-    │   │   ├── ChatController.java           # /api/chat/* endpoints
-    │   │   └── UserController.java           # /api/user/* endpoints
-    │   ├── service/
-    │   │   ├── AuthService.java              # Register + Login logic
-    │   │   ├── JwtService.java               # Token generation/validation
-    │   │   ├── DiseaseDetectionService.java  # AI disease analysis
-    │   │   ├── KrishiGPTService.java         # LLM chat service
-    │   │   ├── ActivityService.java          # Activity logging
-    │   │   └── UserStatsService.java         # Analytics aggregation
-    │   ├── model/
-    │   │   ├── entity/                       # JPA entities
-    │   │   │   ├── User.java
-    │   │   │   ├── DetectionReport.java
-    │   │   │   ├── ChatHistory.java
-    │   │   │   └── UserActivity.java
-    │   │   └── dto/                          # Data Transfer Objects
-    │   └── repository/                       # Spring Data JPA repos
-    └── frontend/
-        └── src/
-            ├── App.jsx                       # Root with auth routing
-            ├── context/
-            │   └── AuthContext.jsx           # JWT state management
-            ├── pages/
-            │   ├── LandingPage.jsx           # Public homepage
-            │   ├── LoginPage.jsx             # Email + password login
-            │   ├── RegisterPage.jsx          # Registration form
-            │   └── ActivityPage.jsx          # Analytics dashboard
-            ├── components/
-            │   ├── ImageUploader.jsx         # Photo upload + detection
-            │   ├── ResultsDashboard.jsx      # Detection results
-            │   ├── TreatmentTabs.jsx         # Treatment plans
-            │   ├── KrishiGPTChat.jsx         # AI chat interface
-            │   └── HistoryPage.jsx           # Scan history
-            └── services/
-                ├── authApi.js                # Auth API calls
-                ├── userApi.js                # User data API calls
-                └── api.js                    # Core API functions
+farmsense-ai/
+├── pom.xml
+├── src/main/java/com/farmsense/
+│   ├── FarmSenseApplication.java
+│   ├── config/
+│   │   ├── SecurityConfig.java
+│   │   ├── JwtAuthFilter.java
+│   │   ├── CorsConfig.java
+│   │   ├── GlobalExceptionHandler.java
+│   │   └── SpringAIConfig.java
+│   ├── controller/
+│   │   ├── AuthController.java
+│   │   ├── DetectionController.java
+│   │   ├── ChatController.java
+│   │   ├── WeatherController.java
+│   │   ├── FarmProfileController.java
+│   │   └── UserController.java
+│   ├── service/
+│   │   ├── AuthService.java
+│   │   ├── JwtService.java
+│   │   ├── DiseaseDetectionService.java
+│   │   ├── KrishiGPTService.java
+│   │   ├── ActivityService.java
+│   │   ├── UserStatsService.java
+│   │   ├── WeatherService.java
+│   │   ├── TranslationService.java
+│   │   └── FarmProfileService.java
+│   ├── model/
+│   │   ├── entity/
+│   │   │   ├── User.java
+│   │   │   ├── DetectionReport.java
+│   │   │   ├── ChatHistory.java
+│   │   │   ├── UserActivity.java
+│   │   │   └── FarmProfile.java
+│   │   └── dto/
+│   └── repository/
+└── frontend/
+       └── src/
+              ├── App.jsx
+              ├── context/
+              │   └── AuthContext.jsx
+              ├── pages/
+              │   ├── LandingPage.jsx
+              │   ├── LoginPage.jsx
+              │   ├── RegisterPage.jsx
+              │   └── ActivityPage.jsx
+              ├── components/
+              │   ├── ImageUploader.jsx
+              │   ├── ResultsDashboard.jsx
+              │   ├── TreatmentTabs.jsx
+              │   ├── KrishiGPTChat.jsx
+              │   └── HistoryPage.jsx
+              └── services/
+                     ├── authApi.js
+                     ├── userApi.js
+                     └── api.js
 ```
 
 ---
@@ -401,8 +423,8 @@ FarmSense-ai/
 | `Port 8080 already in use`       | Old backend still running | `netstat -ano \| findstr :8080` then `taskkill /PID <id> /F` |
 | `database "farmsense" not found` | DB not created            | `psql -U postgres -c "CREATE DATABASE farmsense;"`           |
 | `Connection refused: 11434`      | Ollama not running        | Run `ollama serve`                                           |
-| `Model llama3 not found`         | Model not pulled          | Run `ollama pull llama3`                                     |
-| `Port 3000 in use`               | Another React app running | Kill it or change port                                       |
+| `Model llama3 not found`         | Model not pulled          | Run `ollama pull llama3` and `ollama pull llama3.2-vision`   |
+| `Port 3000 in use`               | Another React app running | Kill it or let CRA choose the next port                      |
 | KrishiGPT not responding         | Ollama not up             | Check `http://localhost:11434`                               |
 | Blank screen after login         | JWT expired or null       | Clear browser storage, re-login                              |
 

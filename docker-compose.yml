@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  farmsense-db:
+    image: postgres:16-alpine
+    container_name: farmsense-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: farmsense
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASS:-root}
+    ports:
+      - "5432:5432"
+    volumes:
+      - farmsense-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  farmsense-ollama:
+    image: ollama/ollama:latest
+    container_name: farmsense-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - farmsense-ollama:/root/.ollama
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+
+  farmsense-backend:
+    build: .
+    container_name: farmsense-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      farmsense-db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://farmsense-db:5432/farmsense
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASS: ${DB_PASS:-root}
+      JWT_SECRET: ${JWT_SECRET:-FarmSenseAI2026ProdSecretKeyMustBeAtLeast64CharsLongForHS256!!}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-604800000}
+      OLLAMA_URL: http://farmsense-ollama:11434
+      WEATHER_API_KEY: ${WEATHER_API_KEY:-demo}
+      LIBRETRANSLATE_URL: ${LIBRETRANSLATE_URL:-http://localhost:5000/translate}
+
+volumes:
+  farmsense-pgdata:
+    driver: local
+  farmsense-ollama:
+    driver: local

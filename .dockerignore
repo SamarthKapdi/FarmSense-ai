@@ -1,0 +1,10 @@
+target/
+.env
+*.jar
+*.log
+node_modules/
+frontend/node_modules/
+frontend/build/
+.idea/
+*.iml
+.DS_Store
