@@ -3,12 +3,13 @@ package com.farmsense.service;
 import com.farmsense.model.dto.DetectionResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -19,7 +20,7 @@ public class TranslationService {
     @Value("${libretranslate.api.url}")
     private String translateUrl;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final WebClient webClient = WebClient.builder().build();
 
     public String translateText(String text, String targetLang) {
         if ("en".equals(targetLang) || text == null || text.isBlank()) {
@@ -32,16 +33,15 @@ public class TranslationService {
             requestBody.put("target", targetLang);
             requestBody.put("format", "text");
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
+            Map<?, ?> response = webClient.post()
+                    .uri(translateUrl)
+                    .bodyValue(requestBody)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
 
-            HttpEntity<Map<String, String>> entity = new HttpEntity<>(requestBody, headers);
-
-            ResponseEntity<Map> response = restTemplate.postForEntity(
-                    translateUrl, entity, Map.class);
-
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                Object translatedText = response.getBody().get("translatedText");
+            if (response != null) {
+                Object translatedText = response.get("translatedText");
                 if (translatedText != null) {
                     return translatedText.toString();
                 }
@@ -49,7 +49,7 @@ public class TranslationService {
             log.debug("Translation returned empty for text: {}", text.substring(0, Math.min(text.length(), 50)));
             return text;
 
-        } catch (ResourceAccessException e) {
+        } catch (WebClientRequestException | ResourceAccessException e) {
             // LibreTranslate is not running — this is expected in dev, log at DEBUG
             log.debug("LibreTranslate not reachable (optional service): {}", e.getMessage());
             return text;
@@ -70,16 +70,16 @@ public class TranslationService {
                     .affectedCrops(result.getAffectedCrops())
                     .severity(translateText(result.getSeverity(), targetLang))
                     .yieldLossEstimate(result.getYieldLossEstimate())
-                    .symptoms(result.getSymptoms().stream()
+                        .symptoms((result.getSymptoms() == null ? List.<String>of() : result.getSymptoms()).stream()
                             .map(s -> translateText(s, targetLang))
                             .collect(Collectors.toList()))
-                    .organicTreatment(result.getOrganicTreatment().stream()
+                        .organicTreatment((result.getOrganicTreatment() == null ? List.<String>of() : result.getOrganicTreatment()).stream()
                             .map(s -> translateText(s, targetLang))
                             .collect(Collectors.toList()))
-                    .chemicalTreatment(result.getChemicalTreatment().stream()
+                        .chemicalTreatment((result.getChemicalTreatment() == null ? List.<String>of() : result.getChemicalTreatment()).stream()
                             .map(s -> translateText(s, targetLang))
                             .collect(Collectors.toList()))
-                    .preventiveMeasures(result.getPreventiveMeasures().stream()
+                        .preventiveMeasures((result.getPreventiveMeasures() == null ? List.<String>of() : result.getPreventiveMeasures()).stream()
                             .map(s -> translateText(s, targetLang))
                             .collect(Collectors.toList()))
                     .bestTimeToTreat(translateText(result.getBestTimeToTreat(), targetLang))

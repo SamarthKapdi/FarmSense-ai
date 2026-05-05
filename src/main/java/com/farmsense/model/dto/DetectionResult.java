@@ -14,6 +14,12 @@ import java.util.List;
 @NoArgsConstructor
 public class DetectionResult {
 
+    private String disease;
+    private double yieldLossPercent;
+    private String organic;
+    private String chemical;
+    private String preventive;
+
     private String diseaseName;
     private List<String> affectedCrops;
     private String severity;
