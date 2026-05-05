@@ -29,9 +29,23 @@ public class JwtService {
                 .claims(Map.of(
                         "userId", user.getId(),
                         "fullName", user.getFullName(),
-                        "role", user.getRole()))
+                        "role", user.getRole(),
+                        "type", "access"))
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
+                .signWith(getSigningKey())
+                .compact();
+    }
+
+    public String generateRefreshToken(User user) {
+        long refreshExpiration = 30L * 24 * 60 * 60 * 1000; // 30 days
+        return Jwts.builder()
+                .subject(user.getEmail())
+                .claims(Map.of(
+                        "userId", user.getId(),
+                        "type", "refresh"))
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + refreshExpiration))
                 .signWith(getSigningKey())
                 .compact();
     }
@@ -70,8 +84,8 @@ public class JwtService {
     }
 
     private SecretKey getSigningKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(
-                java.util.Base64.getEncoder().encodeToString(jwtSecret.getBytes()));
+        // Use the secret string bytes directly — no double-encoding
+        byte[] keyBytes = jwtSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 }

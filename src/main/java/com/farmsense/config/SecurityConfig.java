@@ -23,13 +23,22 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> {
-                })
+                .cors(cors -> {})
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/farm/health").permitAll()
+                        .requestMatchers("/api/weather/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/api/h2-console/**").permitAll()
+                        .requestMatchers("/api/farm-profile/**").authenticated()
+                        .requestMatchers("/api/analytics/**").authenticated()
+                        .requestMatchers("/api/market/**").authenticated()
+                        .requestMatchers("/api/alerts/**").authenticated()
+                        .requestMatchers("/api/notifications/**").authenticated()
                         .anyRequest().authenticated())
+                .headers(headers -> headers.frameOptions(f -> f.sameOrigin()))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
