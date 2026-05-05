@@ -10,7 +10,10 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "chat_history")
+@Table(name = "chat_history", indexes = {
+    @Index(name = "idx_chat_user", columnList = "user_id"),
+    @Index(name = "idx_chat_created", columnList = "createdAt")
+})
 @Data
 @Builder
 @NoArgsConstructor
@@ -21,7 +24,8 @@ public class ChatHistory {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false)
+    // Keep string userId for backward compat
+    @Column(name = "user_id", nullable = false)
     private String userId;
 
     private String userEmail;
@@ -33,7 +37,6 @@ public class ChatHistory {
     private String answer;
 
     private String crop;
-
     private String language;
 
     @CreationTimestamp

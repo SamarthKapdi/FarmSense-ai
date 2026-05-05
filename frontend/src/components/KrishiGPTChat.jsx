@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import LanguageSelector from "./LanguageSelector";
 import { askKrishiGPT } from "../services/api";
 
@@ -7,6 +7,15 @@ const CROPS = [
     "Maize", "Sugarcane", "Soybean", "Groundnut",
     "Onion", "Chili", "Mango",
 ];
+
+const LANG_LOCALE_MAP = {
+    en: "en-IN",
+    hi: "hi-IN",
+    ta: "ta-IN",
+    te: "te-IN",
+    mr: "mr-IN",
+    pa: "pa-IN",
+};
 
 const QUICK_QUESTIONS = {
     en: [
@@ -62,6 +71,56 @@ const WELCOME_MESSAGES = {
     pa: "ਸਤ ਸ੍ਰੀ ਅਕਾਲ! 🙏 ਮੈਂ ਕ੍ਰਿਸ਼ੀGPT ਹਾਂ, ਤੁਹਾਡਾ AI ਖੇਤੀ ਸਹਾਇਕ। ਫਸਲ ਰੋਗਾਂ ਬਾਰੇ ਪੁੱਛੋ!",
 };
 
+// ── TTS Speaker Button ───────────────────────────────
+function SpeakerButton({ text, language }) {
+    const [isSpeaking, setIsSpeaking] = useState(false);
+    const utterRef = useRef(null);
+
+    const handleSpeak = () => {
+        if (isSpeaking) {
+            window.speechSynthesis.cancel();
+            setIsSpeaking(false);
+            return;
+        }
+
+        const synth = window.speechSynthesis;
+        if (!synth) return;
+
+        const utter = new SpeechSynthesisUtterance(text);
+        const locale = LANG_LOCALE_MAP[language] || "en-IN";
+        utter.lang = locale;
+
+        // Try to find a matching voice
+        const voices = synth.getVoices();
+        const match = voices.find(v => v.lang.startsWith(locale.split("-")[0]));
+        if (match) utter.voice = match;
+
+        utter.onend = () => setIsSpeaking(false);
+        utter.onerror = () => setIsSpeaking(false);
+        utterRef.current = utter;
+
+        synth.speak(utter);
+        setIsSpeaking(true);
+    };
+
+    useEffect(() => {
+        return () => window.speechSynthesis?.cancel();
+    }, []);
+
+    if (!window.speechSynthesis) return null;
+
+    return (
+        <button
+            onClick={handleSpeak}
+            className={`ml-1 p-1 rounded-full transition-all text-xs hover:bg-accent/20
+                ${isSpeaking ? "text-accent animate-pulse" : "text-gray-500 hover:text-accent"}`}
+            title={isSpeaking ? "Stop speaking" : "Read aloud"}
+        >
+            {isSpeaking ? "⏹️" : "🔉"}
+        </button>
+    );
+}
+
 export default function KrishiGPTChat({ language, farmerId, token, onLanguageChange }) {
     const [messages, setMessages] = useState([
         {
@@ -74,6 +133,11 @@ export default function KrishiGPTChat({ language, farmerId, token, onLanguageCha
     const [isLoading, setIsLoading] = useState(false);
     const [selectedCrop, setSelectedCrop] = useState("Tomato");
     const messagesEndRef = useRef(null);
+
+    // ── Voice Input State ─────────────────────────────────
+    const [isListening, setIsListening] = useState(false);
+    const [voiceError, setVoiceError] = useState(null);
+    const recognitionRef = useRef(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -93,7 +157,7 @@ export default function KrishiGPTChat({ language, farmerId, token, onLanguageCha
         ]);
     }, [language]);
 
-    const handleSend = async (text) => {
+    const handleSend = useCallback(async (text) => {
         const messageText = text || input.trim();
         if (!messageText) return;
 
@@ -130,7 +194,7 @@ export default function KrishiGPTChat({ language, farmerId, token, onLanguageCha
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [input, selectedCrop, language, token]);
 
     const handleKeyDown = (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
@@ -138,6 +202,52 @@ export default function KrishiGPTChat({ language, farmerId, token, onLanguageCha
             handleSend();
         }
     };
+
+    // ── Voice Input Logic ────────────────────────────────
+    const startListening = useCallback(() => {
+        setVoiceError(null);
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            setVoiceError("Speech recognition not supported. Use Chrome.");
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = LANG_LOCALE_MAP[language] || "en-IN";
+        recognition.interimResults = false;
+        recognition.continuous = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            if (transcript) {
+                setInput(transcript);
+            }
+            setIsListening(false);
+        };
+
+        recognition.onerror = (event) => {
+            if (event.error === "no-speech") {
+                setVoiceError("No speech detected. Try again.");
+            } else if (event.error === "not-allowed") {
+                setVoiceError("Microphone access denied.");
+            } else {
+                setVoiceError("Speech not recognized. Try again.");
+            }
+            setIsListening(false);
+        };
+
+        recognition.onend = () => setIsListening(false);
+
+        recognitionRef.current = recognition;
+        recognition.start();
+        setIsListening(true);
+    }, [language]);
+
+    const stopListening = useCallback(() => {
+        recognitionRef.current?.stop();
+        setIsListening(false);
+    }, []);
 
     const formatTime = (date) => {
         try {
@@ -151,6 +261,7 @@ export default function KrishiGPTChat({ language, farmerId, token, onLanguageCha
     };
 
     const quickQuestions = QUICK_QUESTIONS[language] || QUICK_QUESTIONS.en;
+    const hasSpeechRecognition = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
     return (
         <div className="flex flex-col h-screen max-w-lg mx-auto">
@@ -205,12 +316,15 @@ export default function KrishiGPTChat({ language, farmerId, token, onLanguageCha
                                     {msg.text}
                                 </p>
                             </div>
-                            <p
-                                className={`text-xs text-gray-600 mt-1 ${msg.role === "user" ? "text-right" : "text-left ml-1"
-                                    }`}
-                            >
-                                {formatTime(msg.timestamp)}
-                            </p>
+                            <div className={`flex items-center gap-1 mt-1 ${msg.role === "user" ? "justify-end" : "justify-start ml-1"}`}>
+                                <p className="text-xs text-gray-600">
+                                    {formatTime(msg.timestamp)}
+                                </p>
+                                {/* TTS Speaker button on AI messages */}
+                                {msg.role === "ai" && index > 0 && (
+                                    <SpeakerButton text={msg.text} language={language} />
+                                )}
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -240,6 +354,14 @@ export default function KrishiGPTChat({ language, farmerId, token, onLanguageCha
             <div className="fixed bottom-16 left-0 right-0 bg-dark/95 
                       backdrop-blur-md border-t border-gray-800/50 
                       px-4 pt-3 pb-3 max-w-lg mx-auto">
+                {/* Voice Error */}
+                {voiceError && (
+                    <div className="text-xs text-red-400 mb-2 flex items-center gap-1">
+                        <span>⚠️</span> {voiceError}
+                        <button onClick={() => setVoiceError(null)} className="ml-auto text-gray-500 hover:text-gray-300">✕</button>
+                    </div>
+                )}
+
                 {/* Quick Questions */}
                 <div className="flex gap-2 overflow-x-auto pb-3 no-scrollbar">
                     {quickQuestions.map((q, index) => (
@@ -259,6 +381,22 @@ export default function KrishiGPTChat({ language, farmerId, token, onLanguageCha
 
                 {/* Input Row */}
                 <div className="flex gap-2">
+                    {/* Mic Button */}
+                    {hasSpeechRecognition && (
+                        <button
+                            onClick={isListening ? stopListening : startListening}
+                            disabled={isLoading}
+                            className={`px-3 rounded-xl transition-all flex items-center justify-center
+                                ${isListening
+                                    ? "bg-red-500/20 border border-red-500 text-red-400 animate-pulse"
+                                    : "bg-darker border border-gray-700 text-gray-400 hover:border-accent hover:text-accent"
+                                } disabled:opacity-50`}
+                            title={isListening ? "Stop listening" : "Voice input"}
+                        >
+                            🎤
+                        </button>
+                    )}
+
                     <input
                         type="text"
                         value={input}
@@ -289,6 +427,13 @@ export default function KrishiGPTChat({ language, farmerId, token, onLanguageCha
                         ➤
                     </button>
                 </div>
+
+                {/* Voice info text */}
+                {hasSpeechRecognition && (
+                    <p className="text-[10px] text-gray-600 mt-1.5 text-center">
+                        🎤 Voice input works best in Chrome
+                    </p>
+                )}
             </div>
         </div>
     );
