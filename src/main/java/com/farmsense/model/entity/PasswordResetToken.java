@@ -10,42 +10,33 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
+@Table(name = "password_reset_tokens")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class User {
+public class PasswordResetToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     @Column(nullable = false)
-    private String fullName;
-
-    @Column(nullable = false, unique = true)
     private String email;
 
-    private String passwordHash;
+    @Column(nullable = false, length = 6)
+    private String token;
+
+    @Column(nullable = false)
+    private LocalDateTime expiryDate;
 
     @Builder.Default
-    private boolean emailVerified = false;
-
-    @Builder.Default
-    private String role = "FARMER";
-
-    @Builder.Default
-    private String preferredLanguage = "en";
-
-    @Builder.Default
-    private String preferredCrop = "Tomato";
-
-    @Column(name = "totp_secret")
-    private String totpSecret;
+    private boolean used = false;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
 
-    private LocalDateTime lastLoginAt;
+    public boolean isExpired() {
+        return LocalDateTime.now().isAfter(expiryDate);
+    }
 }
