@@ -11,6 +11,7 @@ export default function RegisterPage({ onNavigate }) {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [fieldErrors, setFieldErrors] = useState({});
 
     const getPasswordStrength = () => {
         if (!password) return { level: 0, label: "", color: "" };
@@ -28,18 +29,22 @@ export default function RegisterPage({ onNavigate }) {
         return { level: 5, label: "Very Strong", color: "bg-accent" };
     };
 
+    const validateForm = () => {
+        const errors = {};
+        if (!fullName || fullName.trim().length < 2) errors.fullName = "Name must be at least 2 characters";
+        if (!email || !/\S+@\S+\.\S+/.test(email)) errors.email = "Invalid email format";
+        if (!password || password.length < 8) errors.password = "Password must be at least 8 characters";
+        else if (!/[A-Z]/.test(password)) errors.password = "Must contain at least 1 uppercase letter";
+        else if (!/[0-9]/.test(password)) errors.password = "Must contain at least 1 number";
+        if (password !== confirmPassword) errors.confirmPassword = "Passwords do not match";
+        setFieldErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
-
-        if (password !== confirmPassword) {
-            setError("Passwords do not match.");
-            return;
-        }
-        if (password.length < 8) {
-            setError("Password must be at least 8 characters.");
-            return;
-        }
+        if (!validateForm()) return;
 
         setIsLoading(true);
         try {
@@ -94,13 +99,14 @@ export default function RegisterPage({ onNavigate }) {
                         <input
                             type="text"
                             value={fullName}
-                            onChange={(e) => setFullName(e.target.value)}
+                            onChange={(e) => { setFullName(e.target.value); setFieldErrors(p => ({...p, fullName: undefined})); }}
                             required
                             placeholder="Rajesh Kumar"
-                            className="w-full bg-darker border border-gray-700 rounded-xl px-4 py-3.5
+                            className={`w-full bg-darker border rounded-xl px-4 py-3.5
                          text-[var(--text-primary)] placeholder-gray-600 focus:outline-none
-                         focus:border-accent transition-colors"
+                         transition-colors ${fieldErrors.fullName ? 'border-red-500' : 'border-gray-700 focus:border-accent'}`}
                         />
+                        {fieldErrors.fullName && <p className="text-red-400 text-xs mt-1">{fieldErrors.fullName}</p>}
                     </div>
 
                     {/* Email */}
@@ -111,13 +117,14 @@ export default function RegisterPage({ onNavigate }) {
                         <input
                             type="email"
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={(e) => { setEmail(e.target.value); setFieldErrors(p => ({...p, email: undefined})); }}
                             required
                             placeholder="farmer@email.com"
-                            className="w-full bg-darker border border-gray-700 rounded-xl px-4 py-3.5
+                            className={`w-full bg-darker border rounded-xl px-4 py-3.5
                          text-[var(--text-primary)] placeholder-gray-600 focus:outline-none
-                         focus:border-accent transition-colors"
+                         transition-colors ${fieldErrors.email ? 'border-red-500' : 'border-gray-700 focus:border-accent'}`}
                         />
+                        {fieldErrors.email && <p className="text-red-400 text-xs mt-1">{fieldErrors.email}</p>}
                     </div>
 
                     {/* Password */}
