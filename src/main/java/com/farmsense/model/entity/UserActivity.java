@@ -10,7 +10,11 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "user_activities")
+@Table(name = "user_activities", indexes = {
+    @Index(name = "idx_activity_user", columnList = "user_id"),
+    @Index(name = "idx_activity_type", columnList = "activityType"),
+    @Index(name = "idx_activity_created", columnList = "createdAt")
+})
 @Data
 @Builder
 @NoArgsConstructor
@@ -21,7 +25,7 @@ public class UserActivity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false)
+    @Column(name = "user_id", nullable = false)
     private String userId;
 
     private String userEmail;

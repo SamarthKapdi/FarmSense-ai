@@ -15,4 +15,6 @@ public interface ReportRepository extends JpaRepository<DetectionReport, String>
     Long countByFarmerId(String farmerId);
 
     Optional<DetectionReport> findTopByFarmerIdOrderByCreatedAtDesc(String farmerId);
+
+    List<DetectionReport> findByFarmerIdAndIsBookmarkedTrueOrderByCreatedAtDesc(String farmerId);
 }
