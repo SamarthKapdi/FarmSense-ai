@@ -29,7 +29,7 @@ public class NotificationService {
      * Send a notification with a reference to a source entity + push via SSE.
      */
     public Notification send(String userId, String type, String title, String message,
-                             String referenceType, Long referenceId) {
+                             String referenceType, String referenceId) {
         Notification n = Notification.builder()
                 .userId(userId)
                 .type(type)

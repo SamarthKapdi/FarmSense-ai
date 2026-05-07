@@ -33,7 +33,7 @@ public class Notification {
     private String referenceType; // e.g., "DISEASE_REPORT", "ADVISORY"
 
     @Column(name = "reference_id")
-    private Long referenceId;
+    private String referenceId;
 
     @Column(name = "created_at")
     @Builder.Default
