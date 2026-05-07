@@ -18,7 +18,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class SseService {
 
     // userId -> list of active SSE connections (supports multi-tab)
-    private final Map<Long, CopyOnWriteArrayList<SseEmitter>> userEmitters = new ConcurrentHashMap<>();
+    private final Map<String, CopyOnWriteArrayList<SseEmitter>> userEmitters = new ConcurrentHashMap<>();
 
     // Global broadcast emitters (admin dashboards, etc.)
     private final CopyOnWriteArrayList<SseEmitter> globalEmitters = new CopyOnWriteArrayList<>();
@@ -26,7 +26,7 @@ public class SseService {
     /**
      * Register a per-user SSE connection.
      */
-    public SseEmitter subscribe(Long userId) {
+    public SseEmitter subscribe(String userId) {
         SseEmitter emitter = new SseEmitter(300_000L); // 5 min timeout
 
         userEmitters.computeIfAbsent(userId, k -> new CopyOnWriteArrayList<>()).add(emitter);
@@ -69,7 +69,7 @@ public class SseService {
     /**
      * Send event to a specific user (all their tabs).
      */
-    public void sendToUser(Long userId, String eventName, Object data) {
+    public void sendToUser(String userId, String eventName, Object data) {
         CopyOnWriteArrayList<SseEmitter> emitters = userEmitters.get(userId);
         if (emitters == null || emitters.isEmpty()) return;
 
@@ -98,13 +98,13 @@ public class SseService {
     /**
      * Broadcast to specific list of users.
      */
-    public void sendToUsers(java.util.List<Long> userIds, String eventName, Object data) {
-        for (Long userId : userIds) {
+    public void sendToUsers(java.util.List<String> userIds, String eventName, Object data) {
+        for (String userId : userIds) {
             sendToUser(userId, eventName, data);
         }
     }
 
-    private void removeEmitter(Long userId, SseEmitter emitter) {
+    private void removeEmitter(String userId, SseEmitter emitter) {
         CopyOnWriteArrayList<SseEmitter> emitters = userEmitters.get(userId);
         if (emitters != null) {
             emitters.remove(emitter);

@@ -21,14 +21,14 @@ public class NotificationService {
     /**
      * Send a notification to a specific user + push via SSE.
      */
-    public Notification send(Long userId, String type, String title, String message) {
+    public Notification send(String userId, String type, String title, String message) {
         return send(userId, type, title, message, null, null);
     }
 
     /**
      * Send a notification with a reference to a source entity + push via SSE.
      */
-    public Notification send(Long userId, String type, String title, String message,
+    public Notification send(String userId, String type, String title, String message,
                              String referenceType, Long referenceId) {
         Notification n = Notification.builder()
                 .userId(userId)
@@ -64,21 +64,21 @@ public class NotificationService {
     /**
      * Broadcast a notification to all users (by providing a list of user IDs).
      */
-    public void broadcast(List<Long> userIds, String type, String title, String message) {
-        for (Long userId : userIds) {
+    public void broadcast(List<String> userIds, String type, String title, String message) {
+        for (String userId : userIds) {
             send(userId, type, title, message);
         }
     }
 
-    public List<Notification> getUserNotifications(Long userId) {
+    public List<Notification> getUserNotifications(String userId) {
         return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
     }
 
-    public List<Notification> getUnreadNotifications(Long userId) {
+    public List<Notification> getUnreadNotifications(String userId) {
         return notificationRepository.findByUserIdAndIsReadFalseOrderByCreatedAtDesc(userId);
     }
 
-    public long getUnreadCount(Long userId) {
+    public long getUnreadCount(String userId) {
         return notificationRepository.countByUserIdAndIsReadFalse(userId);
     }
 
@@ -91,7 +91,7 @@ public class NotificationService {
     }
 
     @Transactional
-    public void markAllAsRead(Long userId) {
+    public void markAllAsRead(String userId) {
         List<Notification> unread = notificationRepository.findByUserIdAndIsReadFalseOrderByCreatedAtDesc(userId);
         unread.forEach(n -> n.setIsRead(true));
         notificationRepository.saveAll(unread);

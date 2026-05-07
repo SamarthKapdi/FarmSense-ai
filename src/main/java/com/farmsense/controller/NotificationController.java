@@ -1,7 +1,7 @@
 package com.farmsense.controller;
 
 import com.farmsense.model.Notification;
-import com.farmsense.model.User;
+import com.farmsense.model.entity.User;
 import com.farmsense.model.dto.ApiResponse;
 import com.farmsense.repository.UserRepository;
 import com.farmsense.service.NotificationService;

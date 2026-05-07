@@ -1,6 +1,6 @@
 package com.farmsense.controller;
 
-import com.farmsense.model.User;
+import com.farmsense.model.entity.User;
 import com.farmsense.repository.UserRepository;
 import com.farmsense.service.SseService;
 import lombok.RequiredArgsConstructor;

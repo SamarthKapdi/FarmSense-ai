@@ -14,7 +14,7 @@ public class Notification {
     private Long id;
 
     @Column(name = "user_id", nullable = false)
-    private Long userId;
+    private String userId;
 
     @Column(nullable = false, length = 50)
     private String type; // DISEASE_ALERT, WEATHER_ALERT, ADVISORY, VERIFICATION, SYSTEM
