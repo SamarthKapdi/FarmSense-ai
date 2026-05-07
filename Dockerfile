@@ -1,15 +1,20 @@
-FROM eclipse-temurin:21-jre-alpine
-
-LABEL maintainer="FarmSense AI Team"
-LABEL description="FarmSense AI - Crop Disease Detection Platform"
-
+# Stage 1: Build
+FROM eclipse-temurin:21-jdk-alpine AS build
 WORKDIR /app
+COPY pom.xml mvnw ./
+COPY .mvn .mvn
+# Download dependencies
+RUN ./mvnw dependency:go-offline -B
+COPY src ./src
+# Package the application
+RUN ./mvnw clean package -DskipTests
 
-COPY target/farmsense-ai-2.0.0.jar app.jar
-
+# Stage 2: Run
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+# Copy the built jar from the build stage
+COPY --from=build /app/target/farmsense-0.0.1-SNAPSHOT.jar app.jar
+# Expose the dynamic port Render will provide
 EXPOSE 8080
-
-ENV JAVA_OPTS="-Xms256m -Xmx512m"
-ENV SPRING_PROFILES_ACTIVE=prod
-
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]
+# Start the application
+ENTRYPOINT ["java", "-jar", "app.jar"]
