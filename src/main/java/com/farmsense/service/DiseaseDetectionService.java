@@ -5,7 +5,6 @@ import com.farmsense.model.dto.DetectionResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.Media;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Service;
@@ -17,8 +16,6 @@ import java.util.Locale;
 
 /**
  * Uses Ollama vision for plant disease detection and returns structured results.
- * Falls back to the chat model for text-based analysis when vision model
- * cannot load (e.g., insufficient system memory).
  */
 @Service
 @Slf4j
@@ -41,36 +38,44 @@ public class DiseaseDetectionService {
         log.info("Starting disease analysis for crop={}, language={}, imageSize={} bytes",
                 crop, language, imageBytes == null ? 0 : imageBytes.length);
 
-        // First try vision model with actual image
+        if (imageBytes == null || imageBytes.length == 0) {
+            throw new IllegalArgumentException("Image bytes cannot be empty");
+        }
+
         try {
             return analyzeWithVision(imageBytes, crop, language);
         } catch (Exception visionEx) {
-            log.warn("Vision model failed ({}), falling back to chat-based analysis for crop={}",
-                    visionEx.getMessage(), crop);
-        }
-
-        // Fallback: use chat model for text-based crop disease analysis
-        try {
-            return analyzeWithChat(crop, language);
-        } catch (Exception chatEx) {
-            log.error("Both vision and chat analysis failed for crop={}: {}",
-                    crop, chatEx.getMessage(), chatEx);
-            return fallbackResult();
+            log.error("Vision model failed completely: {}", visionEx.getMessage(), visionEx);
+            log.warn("Falling back to chat-based analysis due to vision failure...");
+            try {
+                return analyzeWithChat(crop, language);
+            } catch (Exception chatEx) {
+                log.error("Chat model ALSO failed: {}", chatEx.getMessage(), chatEx);
+                throw new RuntimeException("AI Analysis failed completely. See logs for details.", chatEx);
+            }
         }
     }
 
     private DetectionResult analyzeWithVision(byte[] imageBytes, String crop, String language) throws Exception {
         String promptText = buildVisionPrompt(crop, language);
-        var media = new Media(MimeTypeUtils.IMAGE_JPEG,
-                new ByteArrayResource(imageBytes == null ? new byte[0] : imageBytes));
+        var media = new Media(MimeTypeUtils.IMAGE_JPEG, new ByteArrayResource(imageBytes));
         var userMessage = new UserMessage(promptText, List.of(media));
 
-        String response = visionChatClient.prompt(new Prompt(List.of(userMessage))).call().content();
+        log.info("Sending request to Ollama Vision Model...");
+        String response = visionChatClient.prompt()
+                .messages(userMessage)
+                .call()
+                .content();
+
         if (response == null || response.isBlank()) {
             throw new RuntimeException("Vision model returned empty response");
         }
 
+        log.info("RAW Vision AI Response: \n{}", response);
+
         String json = extractJsonPayload(response);
+        log.info("Extracted JSON Payload: \n{}", json);
+
         DetectionResult result = objectMapper.readValue(json, DetectionResult.class);
         DetectionResult normalized = normalizeResult(result, language);
 
@@ -82,6 +87,7 @@ public class DiseaseDetectionService {
     private DetectionResult analyzeWithChat(String crop, String language) throws Exception {
         String promptText = buildChatPrompt(crop, language);
 
+        log.info("Sending request to Ollama Chat Model (Fallback)...");
         String response = chatChatClient.prompt()
                 .system("You are an expert agricultural pathologist. Always respond with pure JSON only, no markdown.")
                 .user(promptText)
@@ -92,7 +98,11 @@ public class DiseaseDetectionService {
             throw new RuntimeException("Chat model returned empty response");
         }
 
+        log.info("RAW Chat AI Response: \n{}", response);
+
         String json = extractJsonPayload(response);
+        log.info("Extracted JSON Payload: \n{}", json);
+
         DetectionResult result = objectMapper.readValue(json, DetectionResult.class);
         DetectionResult normalized = normalizeResult(result, language);
 
@@ -103,90 +113,86 @@ public class DiseaseDetectionService {
 
     private String buildVisionPrompt(String crop, String language) {
         return """
-                Analyze this crop image for disease symptoms.
-                Crop: %s
-                Respond in %s if possible, but ALWAYS return strict JSON only.
-
-                Return exactly these fields:
+                You are a highly skilled plant pathologist AI. Analyze this image of a %s plant.
+                Identify any visible crop diseases, pest damage, or nutrient deficiencies.
+                If the plant looks completely healthy, indicate that.
+                
+                Respond in %s language.
+                
+                You MUST return ONLY a valid JSON object matching the exact structure below. Do not wrap it in markdown block quotes. Do not add any conversational text before or after the JSON.
+                
                 {
-                  "disease": "String",
-                  "confidence": 0,
-                  "severity": "mild|moderate|severe|none",
-                  "description": "String",
-                  "yieldLossPercent": 0.0,
-                  "organic": "String",
-                  "chemical": "String",
-                  "preventive": "String"
+                  "disease": "Exact name of the disease, or 'Healthy' if none",
+                  "confidence": 85,
+                  "severity": "mild",
+                  "description": "Short explanation of visible symptoms",
+                  "yieldLossPercent": 15.5,
+                  "organic": "Step 1. Step 2. Step 3",
+                  "chemical": "Step 1. Step 2. Step 3",
+                  "preventive": "Step 1. Step 2"
                 }
-
-                Rules:
-                - If the plant is healthy, set disease to "Healthy", confidence to 100, severity to "none", yieldLossPercent to 0.
-                - Do not include markdown, code fences, or any explanation outside JSON.
-                - Keep treatment text short and practical.
-                """.formatted(crop == null ? "Unknown" : crop, language == null ? "English" : language);
+                
+                Rules for the JSON output:
+                - "confidence" MUST be an integer between 0 and 100.
+                - "severity" MUST be one of: "none", "mild", "moderate", "severe".
+                - "yieldLossPercent" MUST be a number (float).
+                - For "organic", "chemical", and "preventive", provide steps separated by periods.
+                - If "Healthy", set confidence to 100, severity to "none", yieldLossPercent to 0.0, and treatments to "None required."
+                """.formatted(crop == null || crop.isBlank() ? "Unknown Crop" : crop, language == null || language.isBlank() ? "English" : language);
     }
 
     private String buildChatPrompt(String crop, String language) {
         return """
-                You are analyzing a farmer's uploaded photo of a %s crop.
-                Based on common diseases that affect %s in Indian farming conditions,
-                provide a realistic disease analysis.
+                You are a highly skilled plant pathologist AI. You are analyzing a case for a %s crop in Indian farming conditions.
+                Since you cannot see the image, pick the MOST COMMON severe disease that affects %s.
                 
-                Pick the MOST COMMON disease for %s crops in India and provide
-                a detailed analysis as if you detected it from the image.
-                Respond in %s if possible, but ALWAYS return strict JSON only.
-
-                Return exactly these fields:
+                Respond in %s language.
+                
+                You MUST return ONLY a valid JSON object matching the exact structure below. Do not wrap it in markdown block quotes. Do not add any conversational text before or after the JSON.
+                
                 {
-                  "disease": "String - name of the most common disease",
+                  "disease": "Exact name of the disease",
                   "confidence": 75,
-                  "severity": "mild|moderate|severe",
-                  "description": "Brief description of the disease",
-                  "yieldLossPercent": 15.0,
-                  "organic": "Organic treatment steps separated by periods",
-                  "chemical": "Chemical treatment steps separated by periods",
-                  "preventive": "Preventive measures separated by periods"
+                  "severity": "moderate",
+                  "description": "Short explanation of typical symptoms",
+                  "yieldLossPercent": 25.0,
+                  "organic": "Step 1. Step 2",
+                  "chemical": "Step 1. Step 2",
+                  "preventive": "Step 1. Step 2"
                 }
-
-                Rules:
-                - Use a real, common disease name for this crop
-                - Set confidence between 60-80 (since this is text-based)
-                - Do not include markdown, code fences, or any explanation outside JSON
-                - Keep treatment text short, practical, and specific to Indian farming
                 """.formatted(
-                    crop == null ? "Unknown" : crop,
-                    crop == null ? "Unknown" : crop,
-                    crop == null ? "Unknown" : crop,
-                    language == null ? "English" : language);
+                    crop == null || crop.isBlank() ? "Unknown Crop" : crop,
+                    crop == null || crop.isBlank() ? "Unknown Crop" : crop,
+                    language == null || language.isBlank() ? "English" : language);
     }
 
     private DetectionResult normalizeResult(DetectionResult result, String language) {
         if (result == null) {
-            return fallbackResult();
+            throw new RuntimeException("Parsed DetectionResult was null");
         }
 
-        String disease = firstNonBlank(result.getDisease(), result.getDiseaseName(), "Analysis Failed");
+        String disease = firstNonBlank(result.getDisease(), result.getDiseaseName(), "Unknown Condition");
         double yieldLossPercent = result.getYieldLossPercent();
-        boolean healthy = "healthy".equalsIgnoreCase(disease);
+        boolean healthy = "healthy".equalsIgnoreCase(disease) || "none".equalsIgnoreCase(disease);
 
         return DetectionResult.builder()
                 .disease(disease)
                 .yieldLossPercent(healthy ? 0.0 : yieldLossPercent)
-                .organic(firstNonBlank(result.getOrganic(), ""))
-                .chemical(firstNonBlank(result.getChemical(), ""))
-                .preventive(firstNonBlank(result.getPreventive(), ""))
+                .organic(firstNonBlank(result.getOrganic(), "No organic treatment specified"))
+                .chemical(firstNonBlank(result.getChemical(), "No chemical treatment specified"))
+                .preventive(firstNonBlank(result.getPreventive(), "No preventive measures specified"))
                 .diseaseName(disease)
                 .confidence(Math.max(0, result.getConfidence()))
-                .severity(firstNonBlank(result.getSeverity(), healthy ? "none" : "moderate"))
+                .severity(firstNonBlank(result.getSeverity(), healthy ? "none" : "moderate").toLowerCase(Locale.ROOT))
                 .yieldLossEstimate(String.format(Locale.ROOT, "%.1f%%", healthy ? 0.0 : yieldLossPercent))
-                .symptoms(List.of())
+                .symptoms(List.of(firstNonBlank(result.getDescription(), "No description provided")))
                 .organicTreatment(splitSteps(result.getOrganic()))
                 .chemicalTreatment(splitSteps(result.getChemical()))
                 .preventiveMeasures(splitSteps(result.getPreventive()))
-                .bestTimeToTreat(healthy ? "No treatment needed" : "Consult local expert")
-                .estimatedRecoveryCost(healthy ? "0" : "Consult local expert")
+                .bestTimeToTreat(healthy ? "No treatment needed" : "Immediate action recommended")
+                .estimatedRecoveryCost(healthy ? "0" : "Varies based on severity")
                 .isHealthy(healthy)
-                .urgencyLevel(healthy ? "NONE" : "MONITOR")
+                .urgencyLevel(healthy ? "NONE" : (yieldLossPercent > 20.0 ? "HIGH" : "MONITOR"))
                 .language(language == null ? "en" : language)
                 .timestamp(LocalDateTime.now())
                 .build();
@@ -204,12 +210,19 @@ public class DiseaseDetectionService {
         if (start >= 0 && end > start) {
             return trimmed.substring(start, end + 1);
         }
+        
+        // Fallback: If it doesn't look like JSON at all, maybe it's just plain text.
+        // But we MUST parse it as JSON, so we throw an exception if braces are missing.
+        if (start == -1 || end == -1) {
+            throw new RuntimeException("No JSON object found in response: " + response);
+        }
+        
         return trimmed;
     }
 
     private List<String> splitSteps(String steps) {
         if (steps == null || steps.isBlank()) {
-            return List.of();
+            return List.of("None specified");
         }
 
         return java.util.Arrays.stream(steps.split("\\r?\\n|;|\\.\\s+"))
@@ -225,29 +238,5 @@ public class DiseaseDetectionService {
             }
         }
         return null;
-    }
-
-    private DetectionResult fallbackResult() {
-        return DetectionResult.builder()
-                .disease("Analysis Failed")
-                .yieldLossPercent(0.0)
-                .organic("Consult a local agricultural expert")
-                .chemical("Consult a local agricultural expert")
-                .preventive("Retake a clear image and try again")
-                .diseaseName("Analysis Failed")
-                .confidence(0)
-                .severity("none")
-                .yieldLossEstimate("0.0%")
-                .symptoms(List.of())
-                .organicTreatment(List.of("Consult a local agricultural expert"))
-                .chemicalTreatment(List.of("Consult a local agricultural expert"))
-                .preventiveMeasures(List.of("Retake a clear image and try again"))
-                .bestTimeToTreat("Consult local expert")
-                .estimatedRecoveryCost("Consult local expert")
-                .isHealthy(false)
-                .urgencyLevel("MONITOR")
-                .language("en")
-                .timestamp(LocalDateTime.now())
-                .build();
     }
 }

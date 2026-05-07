@@ -15,6 +15,7 @@ import java.util.List;
 public class DetectionResult {
 
     private String disease;
+    private String description;
     private double yieldLossPercent;
     private String organic;
     private String chemical;

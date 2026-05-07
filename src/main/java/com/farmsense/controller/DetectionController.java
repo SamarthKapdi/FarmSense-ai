@@ -65,8 +65,8 @@ public class DetectionController {
         try {
             result = detectionService.analyzeImage(image.getBytes(), crop, language);
         } catch (Exception e) {
-            log.error("Failed to read uploaded image bytes: {}", e.getMessage(), e);
-            return ResponseEntity.status(500).body(ApiResponse.error("Could not process uploaded image"));
+            log.error("AI Analysis Pipeline Failed: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body(ApiResponse.error("AI Analysis Failed: " + e.getMessage()));
         }
         result.setCropName(crop);
 
