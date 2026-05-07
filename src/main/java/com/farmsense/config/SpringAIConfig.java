@@ -21,8 +21,8 @@ import java.util.function.Function;
  * Spring AI + Ollama configuration with production-grade timeouts.
  *
  * The default OllamaApi uses a 30-second read timeout which is far too short
- * for vision model inference. We inject a custom RestClient.Builder with
- * 60s connect / 300s read to survive llama3.2-vision cold starts.
+ * for vision model inference (llava:7b). We inject a custom RestClient.Builder with
+ * 60s connect / 300s read to survive llava:7b cold starts.
  */
 @Configuration
 @Slf4j
@@ -34,7 +34,7 @@ public class SpringAIConfig {
     @Value("${spring.ai.ollama.chat.model:llama3:latest}")
     private String chatModelName;
 
-    @Value("${spring.ai.ollama.vision.model:llama3.2-vision:latest}")
+    @Value("${spring.ai.ollama.vision.model:llava:7b}")
     private String visionModelName;
 
     // ── Timeout-safe OllamaApi ──────────────────────────────────────────────────
@@ -79,7 +79,7 @@ public class SpringAIConfig {
                 .build();
     }
 
-    // ── Vision Model (llama3.2-vision — multimodal) ─────────────────────────────
+    // ── Vision Model (llava:7b — multimodal, 8GB-safe) ──────────────────────────
 
     @Bean(name = "visionChatModel")
     public OllamaChatModel visionChatModel(OllamaApi ollamaApi) {

@@ -62,13 +62,18 @@ public class KrishiGPTService {
                     STRICT RULES YOU MUST FOLLOW:
                     - Respond ONLY in %s language
                     - Be practical and specific to Indian farming conditions
-                    - Suggest only locally available Indian products and brands
                     - Keep your response under 150 words maximum
                     - Use simple language a farmer with basic education understands
-                    - Always mention cheapest solution first then better options
                     - Current crop context: %s
-                    - Give immediate actionable steps not theoretical advice
-                    - If an image is provided, analyze it for diseases and pests first.
+
+                    SAFETY RULES (NEVER VIOLATE):
+                    - NEVER invent or fabricate pesticide names, chemical names, or brand names
+                    - NEVER quote specific prices unless you are absolutely certain
+                    - NEVER recommend specific commercial products by brand name
+                    - If you are unsure about any treatment, say: "Consult your local Krishi Vigyan Kendra (KVK)"
+                    - Only recommend well-known generic treatments: neem oil, copper fungicide, crop rotation, proper drainage
+                    - Always mention cheapest organic solution first, then general chemical category
+                    - If an image is provided, analyze it for diseases and pests first
                     """.formatted(language, safeCrop);
 
             String conversationId = (userId != null && !userId.isBlank()) ? userId : "anonymous";

@@ -236,6 +236,12 @@ public class DetectionController {
         return ResponseEntity.ok(ApiResponse.ok(reportService.getStats(effectiveId)));
     }
 
+    @Value("${spring.ai.ollama.vision.model:llava:7b}")
+    private String visionModelName;
+
+    @Value("${spring.ai.ollama.chat.model:llama3:latest}")
+    private String chatModelName;
+
     @GetMapping("/health")
     public ResponseEntity<?> health() {
         // 1. Ollama check
@@ -245,7 +251,7 @@ public class DetectionController {
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create(checkedEndpoint))
-                    .timeout(Duration.ofSeconds(2))
+                    .timeout(Duration.ofSeconds(5))
                     .GET()
                     .build();
             HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
@@ -275,7 +281,7 @@ public class DetectionController {
                         "diskSpace", diskOk ? "UP (" + freeGB + " GB free)" : "LOW (" + freeGB + " GB)"
                 ),
                 "ollamaBaseUrl", ollamaBaseUrl,
-                "chatModel", "llama3:latest",
-                "visionModel", "llama3.2-vision:latest")));
+                "chatModel", chatModelName,
+                "visionModel", visionModelName)));
     }
 }
