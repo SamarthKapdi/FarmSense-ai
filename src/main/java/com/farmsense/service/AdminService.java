@@ -83,6 +83,9 @@ public class AdminService {
         return activityRepository.findAll(PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createdAt"))).getContent();
     }
 
+    @org.springframework.beans.factory.annotation.Value("${spring.ai.ollama.base-url:http://localhost:11434}")
+    private String ollamaBaseUrl;
+
     public Map<String, Object> getHealthStatus() {
         Map<String, Object> health = new HashMap<>();
         
@@ -96,7 +99,7 @@ public class AdminService {
 
         // Ollama check
         try {
-            String ollamaUrl = "http://localhost:11434/api/tags";
+            String ollamaUrl = ollamaBaseUrl + "/api/tags";
             webClientBuilder.build().get().uri(ollamaUrl).retrieve().toBodilessEntity().block();
             health.put("ollama", "UP");
         } catch (Exception e) {
