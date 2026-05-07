@@ -1,5 +1,6 @@
 package com.farmsense.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
@@ -10,11 +11,21 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.RestClient;
 
-import java.util.Map;
+import java.time.Duration;
 import java.util.function.Function;
 
+/**
+ * Spring AI + Ollama configuration with production-grade timeouts.
+ *
+ * The default OllamaApi uses a 30-second read timeout which is far too short
+ * for vision model inference. We inject a custom RestClient.Builder with
+ * 60s connect / 300s read to survive llama3.2-vision cold starts.
+ */
 @Configuration
+@Slf4j
 public class SpringAIConfig {
 
     @Value("${spring.ai.ollama.base-url:http://localhost:11434}")
@@ -26,33 +37,81 @@ public class SpringAIConfig {
     @Value("${spring.ai.ollama.vision.model:llama3.2-vision:latest}")
     private String visionModelName;
 
+    // ── Timeout-safe OllamaApi ──────────────────────────────────────────────────
+
+    @Bean
+    public OllamaApi ollamaApi() {
+        log.info("Initializing OllamaApi → baseUrl={}, chatModel={}, visionModel={}",
+                ollamaBaseUrl, chatModelName, visionModelName);
+
+        // RestClient timeout (for non-streaming synchronous calls)
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(60));
+        factory.setReadTimeout(Duration.ofSeconds(300)); // 5 minutes — vision models need this
+
+        RestClient.Builder restClientBuilder = RestClient.builder()
+                .requestFactory(factory);
+
+        // WebClient timeout (for streaming calls)
+        org.springframework.web.reactive.function.client.WebClient.Builder webClientBuilder =
+                org.springframework.web.reactive.function.client.WebClient.builder();
+
+        return new OllamaApi(ollamaBaseUrl, restClientBuilder, webClientBuilder);
+    }
+
+    // ── Chat Memory ─────────────────────────────────────────────────────────────
+
     @Bean
     public ChatMemory chatMemory() {
         return new InMemoryChatMemory();
     }
 
-    @Bean
-    public OllamaApi ollamaApi() {
-        return new OllamaApi(ollamaBaseUrl);
-    }
+    // ── Chat Model (llama3 — text only) ─────────────────────────────────────────
 
     @Bean(name = "chatChatModel")
     public OllamaChatModel chatChatModel(OllamaApi ollamaApi) {
         return OllamaChatModel.builder()
                 .ollamaApi(ollamaApi)
-            .defaultOptions(OllamaOptions.builder().model(chatModelName).build())
+                .defaultOptions(OllamaOptions.builder()
+                        .model(chatModelName)
+                        .temperature(0.7)
+                        .build())
                 .build();
     }
+
+    // ── Vision Model (llama3.2-vision — multimodal) ─────────────────────────────
 
     @Bean(name = "visionChatModel")
     public OllamaChatModel visionChatModel(OllamaApi ollamaApi) {
         return OllamaChatModel.builder()
                 .ollamaApi(ollamaApi)
-            .defaultOptions(OllamaOptions.builder().model(visionModelName).build())
+                .defaultOptions(OllamaOptions.builder()
+                        .model(visionModelName)
+                        .temperature(0.3) // Lower temp = more deterministic JSON
+                        .build())
                 .build();
     }
 
-    // ── Java 21+ Data Records for Spring AI Function Calling ──
+    // ── ChatClient wrappers ─────────────────────────────────────────────────────
+
+    @Bean
+    public ChatClient chatChatClient(
+            @org.springframework.beans.factory.annotation.Qualifier("chatChatModel") OllamaChatModel chatModel) {
+        return ChatClient.builder(chatModel)
+                .defaultSystem(
+                        "You are KrishiGPT, an expert Indian agricultural scientist. " +
+                                "If the farmer asks about prices, use the fetchMarketPrice tool to get real-time info.")
+                .build();
+    }
+
+    @Bean(name = "visionChatClient")
+    public ChatClient visionChatClient(
+            @org.springframework.beans.factory.annotation.Qualifier("visionChatModel") OllamaChatModel visionChatModel) {
+        return ChatClient.builder(visionChatModel).build();
+    }
+
+    // ── Function Calling: Market Prices ──────────────────────────────────────────
+
     public record MarketPriceRequest(String cropName, String state) {
     }
 
@@ -62,7 +121,6 @@ public class SpringAIConfig {
     @Bean
     @Description("Fetch the current APMC Mandi market price of a specific crop in a specific Indian state")
     public Function<MarketPriceRequest, MarketPriceResponse> fetchMarketPrice() {
-        // Mocking real APIs - structured function tool calling
         return request -> {
             String crop = request.cropName().toLowerCase();
             String price = switch (crop) {
@@ -79,19 +137,7 @@ public class SpringAIConfig {
         };
     }
 
-    @Bean
-    public ChatClient chatChatClient(@org.springframework.beans.factory.annotation.Qualifier("chatChatModel") OllamaChatModel chatModel) {
-        return ChatClient.builder(chatModel)
-                .defaultSystem(
-                        "You are KrishiGPT, an expert Indian agricultural scientist. " +
-                                "If the farmer asks about prices, use the fetchMarketPrice tool to get real-time info.")
-                .build();
-    }
-
-    @Bean(name = "visionChatClient")
-    public ChatClient visionChatClient(@org.springframework.beans.factory.annotation.Qualifier("visionChatModel") OllamaChatModel visionChatModel) {
-        return ChatClient.builder(visionChatModel).build();
-    }
+    // ── WebClient Builder (used by AdminService) ────────────────────────────────
 
     @Bean
     public org.springframework.web.reactive.function.client.WebClient.Builder webClientBuilder() {

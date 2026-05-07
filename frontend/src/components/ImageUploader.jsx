@@ -39,7 +39,7 @@ export default function ImageUploader({ language, farmerId, token, onResult }) {
         return new Promise((resolve) => {
             const img = new Image();
             img.onload = () => {
-                const MAX_DIM = 1024;
+                const MAX_DIM = 512;
                 let { width, height } = img;
                 if (width > MAX_DIM || height > MAX_DIM) {
                     const ratio = Math.min(MAX_DIM / width, MAX_DIM / height);
@@ -54,7 +54,7 @@ export default function ImageUploader({ language, farmerId, token, onResult }) {
                 canvas.toBlob(
                     (blob) => resolve(new File([blob], file.name, { type: "image/jpeg" })),
                     "image/jpeg",
-                    0.8
+                    0.6  // Aggressive compression for faster Ollama inference
                 );
             };
             img.src = URL.createObjectURL(file);
@@ -104,8 +104,8 @@ export default function ImageUploader({ language, farmerId, token, onResult }) {
                     }
                 };
                 xhr.onerror = () => reject(new Error("Network error — check your connection"));
-                xhr.ontimeout = () => reject(new Error("Upload timed out"));
-                xhr.timeout = 120000;
+                xhr.ontimeout = () => reject(new Error("AI analysis is taking too long. Please try a smaller image or try again."));
+                xhr.timeout = 300000; // 5 minutes — vision model inference needs time
 
                 const formData = new FormData();
                 if (selectedImages.length > 1) {
