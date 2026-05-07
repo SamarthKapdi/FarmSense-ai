@@ -432,11 +432,71 @@ farmsense-ai/
 
 ---
 
+---
+
+## 📸 Screenshots
+
+> *Add application screenshots here to showcase the beautiful UI!*
+
+<div align="center">
+  <img src="https://via.placeholder.com/800x400?text=Dashboard+Screenshot" alt="Dashboard" width="800"/>
+  <br/>
+  <em>Main Analytics Dashboard</em>
+</div>
+
+<br/>
+
+<div align="center">
+  <img src="https://via.placeholder.com/400x800?text=Mobile+UI+Screenshot" alt="Mobile UI" width="300"/>
+  <img src="https://via.placeholder.com/400x800?text=KrishiGPT+Chat+Screenshot" alt="Chat UI" width="300"/>
+  <br/>
+  <em>Mobile-First Responsive Interface</em>
+</div>
+
+---
+
+## 🚀 Deployment Guide (Free Tier Architecture)
+
+FarmSense AI can be deployed completely for free using the following stack:
+
+- **Frontend**: [Vercel](https://vercel.com/) or [Netlify](https://www.netlify.com/)
+- **Backend**: [Render](https://render.com/) (Web Service)
+- **Database**: [Neon](https://neon.tech/) (Serverless Postgres) or [Supabase](https://supabase.com/)
+- **AI Model (Ollama)**: Local/Self-hosted (Requires GPU/RAM, typically not free) or a low-cost VPS (e.g. Hetzner, DigitalOcean)
+
+### Step 1: Database (Neon)
+1. Create a free PostgreSQL instance on Neon.tech.
+2. Copy the connection string.
+
+### Step 2: Backend (Render)
+1. Create a new Web Service on Render connected to your GitHub repo.
+2. Set the Environment to `Docker` or `Java`.
+3. Build Command: `mvn clean package -DskipTests`
+4. Start Command: `java -jar target/farmsense-0.0.1-SNAPSHOT.jar`
+5. Add Environment Variables:
+   - `SPRING_PROFILES_ACTIVE`: `prod`
+   - `DB_URL`: `jdbc:postgresql://<neon-url>/farmsense?sslmode=require`
+   - `DB_USER`: `<db-username>`
+   - `DB_PASS`: `<db-password>`
+   - `JWT_SECRET`: `<secure-random-32-byte-string>`
+   - `WEATHER_API_KEY`: `<openweathermap-key>`
+   - `OLLAMA_URL`: `<url-to-your-ollama-instance>`
+
+### Step 3: Frontend (Vercel)
+1. Import the repository into Vercel.
+2. Set Framework Preset to `Create React App`.
+3. Set the Root Directory to `frontend`.
+4. Add Environment Variable:
+   - `REACT_APP_API_BASE_URL`: `<your-render-backend-url>/api`
+5. Deploy!
+
+---
+
 ## 🤝 Contributing
 
 1. **Fork** the repository
 2. **Create** a branch: `git checkout -b feature/amazing-feature`
-3. **Commit** changes: `git commit -m 'Add amazing feature'`
+3. **Commit** changes: `git commit -m 'feat: Add amazing feature'`
 4. **Push**: `git push origin feature/amazing-feature`
 5. **Open** a Pull Request
 
@@ -444,7 +504,7 @@ farmsense-ai/
 
 ## 📄 License, Author & Credits
 
-```
+```text
 MIT License — Free to use, modify, and distribute.
 ```
 

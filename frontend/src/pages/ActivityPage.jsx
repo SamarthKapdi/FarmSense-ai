@@ -145,7 +145,7 @@ export default function ActivityPage() {
   return (
     <div className="px-4 pt-5 pb-4 max-w-lg mx-auto fade-in">
       {/* Tab Bar */}
-      <div className="flex gap-1 bg-darker/50 rounded-xl p-1 mb-5 overflow-x-auto no-scrollbar">
+      <div className="flex gap-1 bg-[var(--bg-elevated)] rounded-xl p-1 mb-5 overflow-x-auto no-scrollbar">
         {TABS.map((tab) => (
           <button
             key={tab.id}
@@ -287,14 +287,14 @@ export default function ActivityPage() {
               value={scanFilter}
               onChange={(e) => setScanFilter(e.target.value)}
               placeholder="Search disease..."
-              className="flex-1 bg-darker border border-gray-700 rounded-lg px-3 py-2 
-                         text-sm text-[var(--text-primary)] placeholder-gray-600 focus:outline-none focus:border-accent"
+              className="flex-1 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-3 py-2 
+                         text-sm text-[var(--text-primary)] placeholder-gray-600 focus:outline-none focus:border-emerald-500"
             />
             <select
               value={severityFilter}
               onChange={(e) => setSeverityFilter(e.target.value)}
-              className="bg-darker border border-gray-700 rounded-lg px-2 py-2 
-                         text-sm text-[var(--text-primary)] focus:outline-none focus:border-accent"
+              className="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-2 py-2 
+                         text-sm text-[var(--text-primary)] focus:outline-none focus:border-emerald-500"
             >
               <option value="All">All</option>
               <option value="Mild">Mild</option>
@@ -350,7 +350,7 @@ export default function ActivityPage() {
                   </div>
                 </button>
                 {expandedScan === index && (
-                  <div className="mt-3 pt-3 border-t border-gray-800/50 fade-in space-y-2">
+                  <div className="mt-3 pt-3 border-t border-[var(--border)] fade-in space-y-2">
                     {scan.yieldLossEstimate && (
                       <p className="text-gray-400 text-xs">
                         📉 Yield Loss:{' '}
@@ -424,7 +424,7 @@ export default function ActivityPage() {
                   </div>
                 </button>
                 {expandedChat === index && (
-                  <div className="mt-3 pt-3 border-t border-gray-800/50 fade-in space-y-2">
+                  <div className="mt-3 pt-3 border-t border-[var(--border)] fade-in space-y-2">
                     <div>
                       <p className="text-gray-500 text-xs mb-1">❓ Question</p>
                       <p className="text-gray-200 text-sm">{chat.question}</p>
@@ -433,7 +433,7 @@ export default function ActivityPage() {
                       <p className="text-gray-500 text-xs mb-1">
                         🤖 KrishiGPT Answer
                       </p>
-                      <p className="text-gray-300 text-sm whitespace-pre-wrap bg-darker/50 rounded-lg p-3">
+                      <p className="text-[var(--text-secondary)] text-sm whitespace-pre-wrap bg-[var(--bg-elevated)] rounded-lg p-3">
                         {chat.answer}
                       </p>
                     </div>
@@ -476,7 +476,7 @@ export default function ActivityPage() {
                             {count}
                           </span>
                         </div>
-                        <div className="h-2 bg-darker rounded-full overflow-hidden">
+                        <div className="h-2 bg-[var(--bg-elevated)] rounded-full overflow-hidden">
                           <div
                             className="h-full bg-gradient-to-r from-accent to-primary rounded-full transition-all duration-700"
                             style={{
@@ -505,7 +505,7 @@ export default function ActivityPage() {
                             {count}
                           </span>
                         </div>
-                        <div className="h-2 bg-darker rounded-full overflow-hidden">
+                        <div className="h-2 bg-[var(--bg-elevated)] rounded-full overflow-hidden">
                           <div
                             className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full transition-all duration-700"
                             style={{

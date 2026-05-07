@@ -13,4 +13,6 @@ public interface ChatHistoryRepository extends JpaRepository<ChatHistory, String
     List<ChatHistory> findByUserIdAndCrop(String userId, String crop);
 
     Long countByUserId(String userId);
+
+    Long countByCreatedAtAfter(java.time.LocalDateTime date);
 }

@@ -33,7 +33,10 @@ public class User {
     private boolean emailVerified = false;
 
     @Builder.Default
-    private String role = "FARMER";
+    private boolean enabled = true;
+
+    @Builder.Default
+    private String role = "ROLE_FARMER";
 
     @Builder.Default
     private String preferredLanguage = "en";

@@ -89,7 +89,7 @@ public class PdfReportService {
                 .setBorder(null)
                 .setPadding(6));
         table.addCell(new Cell()
-                .add(new Paragraph(value).setFontSize(10))
+                .add(new Paragraph(safe(value)).setFontSize(10))
                 .setBorder(null)
                 .setPadding(6));
     }

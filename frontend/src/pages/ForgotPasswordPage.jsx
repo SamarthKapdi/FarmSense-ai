@@ -89,9 +89,9 @@ export default function ForgotPasswordPage({ onNavigate }) {
                             type="email" value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required placeholder="farmer@email.com"
-                            className="w-full bg-darker border border-gray-700 rounded-xl px-4 py-3.5
+                            className="w-full bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl px-4 py-3.5
                                 text-[var(--text-primary)] placeholder-gray-600 focus:outline-none
-                                focus:border-accent transition-colors"
+                                focus:border-emerald-500 transition-colors"
                         />
                     </div>
                     <button type="submit" disabled={isLoading || !email}

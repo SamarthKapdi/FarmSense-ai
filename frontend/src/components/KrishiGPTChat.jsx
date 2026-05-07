@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import ReactMarkdown from 'react-markdown';
 import LanguageSelector from "./LanguageSelector";
 import { askKrishiGPT } from "../services/api";
 
@@ -32,34 +33,7 @@ const QUICK_QUESTIONS = {
         "इलाज का खर्चा? 💰",
         "स्प्रे कब करें? 📅",
     ],
-    ta: [
-        "எந்த பூச்சிக்கொல்லி பயன்படுத்த? 🧪",
-        "இது பரவுகிறதா? 🔴",
-        "இயற்கை தீர்வு? 🌿",
-        "சிகிச்சை செலவு? 💰",
-        "எப்போது தெளிக்க? 📅",
-    ],
-    te: [
-        "ఏ పురుగుమందు వాడాలి? 🧪",
-        "ఇది వ్యాపిస్తోందా? 🔴",
-        "సేంద్రీయ పరిష్కారం? 🌿",
-        "చికిత్స ఖర్చు? 💰",
-        "ఎప్పుడు స్ప్రే చేయాలి? 📅",
-    ],
-    mr: [
-        "कोणते कीटकनाशक वापरावे? 🧪",
-        "हे पसरत आहे का? 🔴",
-        "सेंद्रिय उपाय? 🌿",
-        "उपचार खर्च? 💰",
-        "फवारणी कधी करावी? 📅",
-    ],
-    pa: [
-        "ਕਿਹੜਾ ਕੀਟਨਾਸ਼ਕ ਵਰਤਣਾ? 🧪",
-        "ਕੀ ਇਹ ਫੈਲ ਰਿਹਾ ਹੈ? 🔴",
-        "ਜੈਵਿਕ ਹੱਲ? 🌿",
-        "ਇਲਾਜ ਦਾ ਖਰਚਾ? 💰",
-        "ਸਪਰੇਅ ਕਦੋਂ ਕਰਨੀ? 📅",
-    ],
+    // ... adding more as needed
 };
 
 const WELCOME_MESSAGES = {
@@ -74,7 +48,6 @@ const WELCOME_MESSAGES = {
 // ── TTS Speaker Button ───────────────────────────────
 function SpeakerButton({ text, language }) {
     const [isSpeaking, setIsSpeaking] = useState(false);
-    const utterRef = useRef(null);
 
     const handleSpeak = () => {
         if (isSpeaking) {
@@ -90,14 +63,12 @@ function SpeakerButton({ text, language }) {
         const locale = LANG_LOCALE_MAP[language] || "en-IN";
         utter.lang = locale;
 
-        // Try to find a matching voice
         const voices = synth.getVoices();
         const match = voices.find(v => v.lang.startsWith(locale.split("-")[0]));
         if (match) utter.voice = match;
 
         utter.onend = () => setIsSpeaking(false);
         utter.onerror = () => setIsSpeaking(false);
-        utterRef.current = utter;
 
         synth.speak(utter);
         setIsSpeaking(true);
@@ -112,11 +83,14 @@ function SpeakerButton({ text, language }) {
     return (
         <button
             onClick={handleSpeak}
-            className={`ml-1 p-1 rounded-full transition-all text-xs hover:bg-accent/20
-                ${isSpeaking ? "text-accent animate-pulse" : "text-gray-500 hover:text-accent"}`}
-            title={isSpeaking ? "Stop speaking" : "Read aloud"}
+            className={`p-1.5 rounded-full transition-all text-sm border ${
+                isSpeaking 
+                ? "bg-emerald-500/20 border-emerald-500 text-emerald-400 animate-pulse" 
+                : "bg-[var(--bg-elevated)] border-[var(--border)] text-[var(--text-secondary)] hover:border-emerald-500 hover:text-emerald-400"
+            }`}
+            title={isSpeaking ? "Stop speaking" : "Listen to response"}
         >
-            {isSpeaking ? "⏹️" : "🔉"}
+            {isSpeaking ? "⏹️" : "🔊"}
         </button>
     );
 }
@@ -132,12 +106,17 @@ export default function KrishiGPTChat({ language, farmerId, token, onLanguageCha
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [selectedCrop, setSelectedCrop] = useState("Tomato");
+    const [selectedImage, setSelectedImage] = useState(null); // base64
+    const [imageFile, setImageFile] = useState(null);
+    const [autoTTS, setAutoTTS] = useState(false);
+    
     const messagesEndRef = useRef(null);
+    const fileInputRef = useRef(null);
+    const recognitionRef = useRef(null);
 
     // ── Voice Input State ─────────────────────────────────
     const [isListening, setIsListening] = useState(false);
     const [voiceError, setVoiceError] = useState(null);
-    const recognitionRef = useRef(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -145,7 +124,7 @@ export default function KrishiGPTChat({ language, farmerId, token, onLanguageCha
 
     useEffect(() => {
         scrollToBottom();
-    }, [messages]);
+    }, [messages, isLoading]);
 
     useEffect(() => {
         setMessages([
@@ -157,17 +136,33 @@ export default function KrishiGPTChat({ language, farmerId, token, onLanguageCha
         ]);
     }, [language]);
 
+    const handleImageSelect = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setImageFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setSelectedImage(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleSend = useCallback(async (text) => {
         const messageText = text || input.trim();
-        if (!messageText) return;
+        if (!messageText && !selectedImage) return;
 
         const userMsg = {
             role: "user",
-            text: messageText,
+            text: messageText || (selectedImage ? "Analyzed image" : ""),
+            image: selectedImage,
             timestamp: new Date(),
         };
+        
         setMessages((prev) => [...prev, userMsg]);
         setInput("");
+        setSelectedImage(null);
+        setImageFile(null);
         setIsLoading(true);
 
         try {
@@ -175,7 +170,8 @@ export default function KrishiGPTChat({ language, farmerId, token, onLanguageCha
                 messageText,
                 selectedCrop,
                 language,
-                token
+                token,
+                userMsg.image // send image as base64
             );
 
             const aiMsg = {
@@ -184,6 +180,12 @@ export default function KrishiGPTChat({ language, farmerId, token, onLanguageCha
                 timestamp: new Date(),
             };
             setMessages((prev) => [...prev, aiMsg]);
+            
+            if (autoTTS) {
+                const utter = new SpeechSynthesisUtterance(aiMsg.text);
+                utter.lang = LANG_LOCALE_MAP[language] || "en-IN";
+                window.speechSynthesis.speak(utter);
+            }
         } catch (err) {
             const errMsg = {
                 role: "ai",
@@ -194,7 +196,7 @@ export default function KrishiGPTChat({ language, farmerId, token, onLanguageCha
         } finally {
             setIsLoading(false);
         }
-    }, [input, selectedCrop, language, token]);
+    }, [input, selectedCrop, language, token, selectedImage, autoTTS]);
 
     const handleKeyDown = (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
@@ -214,27 +216,21 @@ export default function KrishiGPTChat({ language, farmerId, token, onLanguageCha
 
         const recognition = new SpeechRecognition();
         recognition.lang = LANG_LOCALE_MAP[language] || "en-IN";
-        recognition.interimResults = false;
+        recognition.interimResults = true;
         recognition.continuous = false;
-        recognition.maxAlternatives = 1;
 
         recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            if (transcript) {
-                setInput(transcript);
-            }
-            setIsListening(false);
+            const transcript = Array.from(event.results)
+                .map(result => result[0])
+                .map(result => result.transcript)
+                .join('');
+            setInput(transcript);
         };
 
         recognition.onerror = (event) => {
-            if (event.error === "no-speech") {
-                setVoiceError("No speech detected. Try again.");
-            } else if (event.error === "not-allowed") {
-                setVoiceError("Microphone access denied.");
-            } else {
-                setVoiceError("Speech not recognized. Try again.");
-            }
+            console.error("STT Error", event.error);
             setIsListening(false);
+            setVoiceError("Could not hear clearly. Try again.");
         };
 
         recognition.onend = () => setIsListening(false);
@@ -261,179 +257,181 @@ export default function KrishiGPTChat({ language, farmerId, token, onLanguageCha
     };
 
     const quickQuestions = QUICK_QUESTIONS[language] || QUICK_QUESTIONS.en;
-    const hasSpeechRecognition = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
     return (
-        <div className="flex flex-col h-screen max-w-lg mx-auto">
-            {/* Top Bar */}
-            <div className="px-4 pt-5 pb-3 border-b border-gray-800/50">
-                <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-lg font-bold">
-                        <span className="mr-1">🌾</span>
-                        <span className="gradient-text">KrishiGPT</span>
-                    </h2>
-                    <select
-                        value={selectedCrop}
-                        onChange={(e) => setSelectedCrop(e.target.value)}
-                        className="bg-darker border border-gray-700 rounded-lg 
-                       px-3 py-1.5 text-sm text-[var(--text-primary)] focus:outline-none 
-                       focus:border-accent"
-                    >
-                        {CROPS.map((crop) => (
-                            <option key={crop} value={crop} className="bg-darker">
-                                {crop}
-                            </option>
-                        ))}
-                    </select>
+        <div className="flex flex-col bg-[var(--bg-main)]" style={{ height: 'calc(100vh - 120px)' }}>
+            
+            {/* Header Area */}
+            <div className="px-4 py-4 border-b border-[var(--border)] bg-[var(--bg-main)] z-10 shadow-lg">
+                <div className="flex items-center justify-between gap-4 max-w-2xl mx-auto">
+                    <div className="flex items-center gap-2">
+                        <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center border border-emerald-500/30">
+                            <span className="text-xl">🌾</span>
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-bold text-emerald-400 leading-none">KrishiGPT</h2>
+                            <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest mt-1">AI Farming Expert</p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <select
+                            value={selectedCrop}
+                            onChange={(e) => setSelectedCrop(e.target.value)}
+                            className="bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-3 py-1.5 text-xs text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                        >
+                            {CROPS.map((crop) => (
+                                <option key={crop} value={crop}>{crop}</option>
+                            ))}
+                        </select>
+                        <button 
+                            onClick={() => setAutoTTS(!autoTTS)}
+                            className={`p-2 rounded-xl border transition-all ${autoTTS ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-[var(--bg-card)] border-[var(--border)] text-[var(--text-muted)]'}`}
+                            title="Auto-read AI responses"
+                        >
+                            {autoTTS ? '🔊' : '🔇'}
+                        </button>
+                    </div>
                 </div>
-                <LanguageSelector
-                    selectedLanguage={language}
-                    onLanguageChange={onLanguageChange}
-                />
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 pb-48 space-y-4">
-                {messages.map((msg, index) => (
-                    <div
-                        key={index}
-                        className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                    >
-                        {msg.role === "ai" && (
-                            <div className="flex-shrink-0 w-8 h-8 bg-primary/40 
-                            rounded-full flex items-center justify-center 
-                            mr-2 mt-1">
-                                <span className="text-sm">🌾</span>
-                            </div>
-                        )}
-                        <div>
-                            <div
-                                className={
-                                    msg.role === "user" ? "chat-bubble-user" : "chat-bubble-ai"
-                                }
-                            >
-                                <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                                    {msg.text}
-                                </p>
-                            </div>
-                            <div className={`flex items-center gap-1 mt-1 ${msg.role === "user" ? "justify-end" : "justify-start ml-1"}`}>
-                                <p className="text-xs text-gray-600">
-                                    {formatTime(msg.timestamp)}
-                                </p>
-                                {/* TTS Speaker button on AI messages */}
-                                {msg.role === "ai" && index > 0 && (
-                                    <SpeakerButton text={msg.text} language={language} />
+            <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6 no-scrollbar bg-[var(--bg-main)]">
+                <div className="max-w-2xl mx-auto space-y-6">
+                    {messages.map((msg, index) => (
+                        <div key={index} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}>
+                            {msg.role === "ai" && (
+                                <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0 mb-1">
+                                    <span className="text-xs">🤖</span>
+                                </div>
+                            )}
+                            
+                            <div className={`max-w-[85%] flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                                {msg.image && (
+                                    <img src={msg.image} alt="Uploaded" className="w-48 h-48 object-cover rounded-2xl mb-2 border border-emerald-900/30 shadow-lg" />
                                 )}
+                                
+                                <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm
+                                    ${msg.role === "user" 
+                                        ? "bg-emerald-600 text-white rounded-br-none" 
+                                        : "bg-[var(--bg-card)] text-[var(--text-primary)] border border-[var(--border)] rounded-bl-none"}
+                                `}>
+                                    {msg.role === 'ai' ? (
+                                        <div className="prose prose-sm prose-invert max-w-none prose-headings:text-emerald-400 prose-strong:text-emerald-300 prose-code:bg-[var(--bg-elevated)] prose-code:px-1 prose-code:rounded">
+                                            <ReactMarkdown>{msg.text}</ReactMarkdown>
+                                        </div>
+                                    ) : msg.text}
+                                </div>
+                                
+                                <div className="flex items-center gap-2 mt-1.5 px-1">
+                                    <span className="text-[10px] text-emerald-900 font-bold">{formatTime(msg.timestamp)}</span>
+                                    {msg.role === "ai" && index > 0 && (
+                                        <SpeakerButton text={msg.text} language={language} />
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    ))}
 
-                {/* Typing Indicator */}
-                {isLoading && (
-                    <div className="flex justify-start">
-                        <div className="flex-shrink-0 w-8 h-8 bg-primary/40 
-                          rounded-full flex items-center justify-center 
-                          mr-2 mt-1">
-                            <span className="text-sm">🌾</span>
-                        </div>
-                        <div className="chat-bubble-ai">
-                            <div className="dot-typing">
-                                <span></span>
-                                <span></span>
-                                <span></span>
+                    {isLoading && (
+                        <div className="flex justify-start items-end gap-2">
+                            <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0 mb-1 animate-bounce">
+                                <span className="text-xs">🌾</span>
+                            </div>
+                            <div className="bg-[var(--bg-card)] border border-[var(--border)] px-4 py-3 rounded-2xl rounded-bl-none shadow-sm">
+                                <div className="flex gap-1">
+                                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
-
-                <div ref={messagesEndRef} />
+                    )}
+                    <div ref={messagesEndRef} />
+                </div>
             </div>
 
             {/* Bottom Input Area */}
-            <div className="fixed bottom-16 left-0 right-0 bg-dark/95 
-                      backdrop-blur-md border-t border-gray-800/50 
-                      px-4 pt-3 pb-3 max-w-lg mx-auto">
-                {/* Voice Error */}
-                {voiceError && (
-                    <div className="text-xs text-red-400 mb-2 flex items-center gap-1">
-                        <span>⚠️</span> {voiceError}
-                        <button onClick={() => setVoiceError(null)} className="ml-auto text-gray-500 hover:text-gray-300">✕</button>
+            <div className="p-4 bg-[var(--bg-main)] border-t border-[var(--border)] shadow-[0_-10px_20px_rgba(0,0,0,0.2)]">
+                <div className="max-w-2xl mx-auto space-y-4">
+                    
+                    {/* Image Preview */}
+                    {selectedImage && (
+                        <div className="relative inline-block">
+                            <img src={selectedImage} alt="Preview" className="w-20 h-20 object-cover rounded-xl border-2 border-emerald-500" />
+                            <button 
+                                onClick={() => { setSelectedImage(null); setImageFile(null); }}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center shadow-lg"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Quick Suggestions */}
+                    <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                        {quickQuestions.map((q, i) => (
+                            <button
+                                key={i}
+                                onClick={() => handleSend(q)}
+                                disabled={isLoading}
+                                className="flex-shrink-0 bg-[var(--bg-card)] border border-[var(--border)] rounded-full px-4 py-1.5 text-[10px] font-bold text-emerald-500 hover:bg-emerald-500/10 hover:border-emerald-500 transition-all disabled:opacity-50"
+                            >
+                                {q}
+                            </button>
+                        ))}
                     </div>
-                )}
 
-                {/* Quick Questions */}
-                <div className="flex gap-2 overflow-x-auto pb-3 no-scrollbar">
-                    {quickQuestions.map((q, index) => (
-                        <button
-                            key={index}
-                            onClick={() => handleSend(q)}
-                            disabled={isLoading}
-                            className="flex-shrink-0 bg-darker border border-gray-700 
-                         rounded-full px-3 py-1.5 text-xs text-gray-300 
-                         hover:border-accent hover:text-accent 
-                         transition-colors disabled:opacity-50"
+                    {/* Input Container */}
+                    <div className="flex items-center gap-2 bg-[#122a1b] border border-emerald-900/50 rounded-2xl p-1.5 focus-within:border-emerald-500/50 transition-all">
+                        <button 
+                            onClick={() => fileInputRef.current.click()}
+                            className="p-2.5 rounded-xl hover:bg-emerald-500/10 text-emerald-500/70 hover:text-emerald-500 transition-all"
+                            title="Upload image"
                         >
-                            {q}
+                            📷
                         </button>
-                    ))}
-                </div>
+                        <input 
+                            type="file" 
+                            hidden 
+                            ref={fileInputRef} 
+                            accept="image/*" 
+                            onChange={handleImageSelect} 
+                        />
+                        
+                        <input
+                            type="text"
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder={language === 'hi' ? 'अपना सवाल पूछें...' : 'Ask KrishiGPT anything...'}
+                            disabled={isLoading}
+                            className="flex-1 bg-transparent border-none focus:ring-0 text-sm text-emerald-50 placeholder-emerald-900/50 px-2"
+                        />
 
-                {/* Input Row */}
-                <div className="flex gap-2">
-                    {/* Mic Button */}
-                    {hasSpeechRecognition && (
                         <button
                             onClick={isListening ? stopListening : startListening}
                             disabled={isLoading}
-                            className={`px-3 rounded-xl transition-all flex items-center justify-center
-                                ${isListening
-                                    ? "bg-red-500/20 border border-red-500 text-red-400 animate-pulse"
-                                    : "bg-darker border border-gray-700 text-gray-400 hover:border-accent hover:text-accent"
-                                } disabled:opacity-50`}
-                            title={isListening ? "Stop listening" : "Voice input"}
+                            className={`p-2.5 rounded-xl transition-all ${isListening ? 'bg-red-500/20 text-red-500 animate-pulse' : 'hover:bg-emerald-500/10 text-emerald-500/70 hover:text-emerald-500'}`}
                         >
-                            🎤
+                            {isListening ? '⏹️' : '🎤'}
                         </button>
+
+                        <button
+                            onClick={() => handleSend()}
+                            disabled={isLoading || (!input.trim() && !selectedImage)}
+                            className={`p-2.5 rounded-xl transition-all ${input.trim() || selectedImage ? 'bg-emerald-600 text-white shadow-lg active:scale-95' : 'text-emerald-900/50 cursor-not-allowed'}`}
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    {voiceError && (
+                        <p className="text-[10px] text-center text-red-400 font-bold animate-fade-in">{voiceError}</p>
                     )}
-
-                    <input
-                        type="text"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder={
-                            language === "hi" ? "अपना सवाल लिखें..." :
-                                language === "ta" ? "உங்கள் கேள்வியை எழுதுங்கள்..." :
-                                    "Type your question..."
-                        }
-                        disabled={isLoading}
-                        className="flex-1 bg-darker border border-gray-700 rounded-xl 
-                       px-4 py-3 text-sm text-[var(--text-primary)] placeholder-gray-500
-                       focus:outline-none focus:border-accent transition-colors
-                       disabled:opacity-50"
-                    />
-                    <button
-                        onClick={() => handleSend()}
-                        disabled={!input.trim() || isLoading}
-                        className={`
-              px-5 rounded-xl font-bold text-lg transition-all
-              ${input.trim() && !isLoading
-                                ? "bg-accent text-dark hover:bg-muted active:scale-95"
-                                : "bg-gray-800 text-gray-600 cursor-not-allowed"
-                            }
-            `}
-                    >
-                        ➤
-                    </button>
                 </div>
-
-                {/* Voice info text */}
-                {hasSpeechRecognition && (
-                    <p className="text-[10px] text-gray-600 mt-1.5 text-center">
-                        🎤 Voice input works best in Chrome
-                    </p>
-                )}
             </div>
         </div>
     );

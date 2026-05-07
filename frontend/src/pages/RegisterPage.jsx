@@ -12,6 +12,8 @@ export default function RegisterPage({ onNavigate }) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [fieldErrors, setFieldErrors] = useState({});
+    const [role, setRole] = useState("FARMER");
+    const [agronomistCode, setAgronomistCode] = useState("");
 
     const getPasswordStrength = () => {
         if (!password) return { level: 0, label: "", color: "" };
@@ -22,11 +24,11 @@ export default function RegisterPage({ onNavigate }) {
         if (/[0-9]/.test(password)) score++;
         if (/[^A-Za-z0-9]/.test(password)) score++;
 
-        if (score <= 1) return { level: 1, label: "Weak", color: "bg-red-500" };
-        if (score === 2) return { level: 2, label: "Fair", color: "bg-yellow-500" };
-        if (score === 3) return { level: 3, label: "Good", color: "bg-blue-500" };
-        if (score === 4) return { level: 4, label: "Strong", color: "bg-green-500" };
-        return { level: 5, label: "Very Strong", color: "bg-accent" };
+        if (score <= 1) return { level: 1, label: "Weak", color: "#ef4444" };
+        if (score === 2) return { level: 2, label: "Fair", color: "#f59e0b" };
+        if (score === 3) return { level: 3, label: "Good", color: "#3b82f6" };
+        if (score === 4) return { level: 4, label: "Strong", color: "#22c55e" };
+        return { level: 5, label: "Very Strong", color: "var(--accent)" };
     };
 
     const validateForm = () => {
@@ -48,7 +50,7 @@ export default function RegisterPage({ onNavigate }) {
 
         setIsLoading(true);
         try {
-            const response = await registerUser(fullName, email, password);
+            const response = await registerUser(fullName, email, password, role, agronomistCode);
             if (response.token) {
                 login(response);
                 onNavigate("app");
@@ -66,106 +68,90 @@ export default function RegisterPage({ onNavigate }) {
     const passwordsMatch = confirmPassword && password === confirmPassword;
     const passwordsMismatch = confirmPassword && password !== confirmPassword;
 
+    const inputStyle = (hasError) => `input-field ${hasError ? 'error' : ''}`;
+    const labelStyle = {
+        display: 'block', color: 'var(--text-muted)', fontSize: '12px',
+        marginBottom: '6px', fontWeight: 600, letterSpacing: '0.5px',
+    };
+
     return (
-        <div className="min-h-screen bg-dark flex items-center justify-center px-5 py-8">
-            <div className="w-full max-w-md">
+        <div className="auth-bg" style={{ padding: '20px' }}>
+            <div className="auth-card fade-in" style={{ maxWidth: '460px' }}>
 
                 {/* Header */}
-                <div className="text-center mb-8">
-                    <div className="text-5xl mb-3 leaf-pulse">🌱</div>
-                    <h1 className="text-2xl font-extrabold">
+                <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+                    <div className="leaf-pulse" style={{ fontSize: '48px', marginBottom: '12px' }}>🌱</div>
+                    <h1 style={{ fontSize: '26px', fontWeight: 800, marginBottom: '6px' }}>
                         <span className="gradient-text">Join FarmSense AI</span>
                     </h1>
-                    <p className="text-gray-400 text-sm mt-2">
+                    <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
                         Create your free account
                     </p>
                 </div>
 
                 {/* Error Banner */}
                 {error && (
-                    <div className="bg-red-950/50 border border-red-800/50 rounded-xl p-3 mb-5 fade-in">
-                        <p className="text-red-300 text-sm text-center">⚠️ {error}</p>
+                    <div className="fade-in" style={{
+                        background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+                        borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: '20px',
+                    }}>
+                        <p style={{ color: '#f87171', fontSize: '13px', textAlign: 'center' }}>⚠️ {error}</p>
                     </div>
                 )}
 
                 {/* Registration Form */}
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
                     {/* Full Name */}
                     <div>
-                        <label className="block text-gray-400 text-xs mb-1.5 font-medium">
-                            👤 Full Name
-                        </label>
-                        <input
-                            type="text"
-                            value={fullName}
+                        <label style={labelStyle}>FULL NAME</label>
+                        <input type="text" value={fullName}
                             onChange={(e) => { setFullName(e.target.value); setFieldErrors(p => ({...p, fullName: undefined})); }}
-                            required
-                            placeholder="Rajesh Kumar"
-                            className={`w-full bg-darker border rounded-xl px-4 py-3.5
-                         text-[var(--text-primary)] placeholder-gray-600 focus:outline-none
-                         transition-colors ${fieldErrors.fullName ? 'border-red-500' : 'border-gray-700 focus:border-accent'}`}
-                        />
-                        {fieldErrors.fullName && <p className="text-red-400 text-xs mt-1">{fieldErrors.fullName}</p>}
+                            required placeholder="Rajesh Kumar"
+                            className={inputStyle(fieldErrors.fullName)} />
+                        {fieldErrors.fullName && <p style={{ color: '#f87171', fontSize: '12px', marginTop: '4px' }}>{fieldErrors.fullName}</p>}
                     </div>
 
                     {/* Email */}
                     <div>
-                        <label className="block text-gray-400 text-xs mb-1.5 font-medium">
-                            📧 Email
-                        </label>
-                        <input
-                            type="email"
-                            value={email}
+                        <label style={labelStyle}>EMAIL</label>
+                        <input type="email" value={email}
                             onChange={(e) => { setEmail(e.target.value); setFieldErrors(p => ({...p, email: undefined})); }}
-                            required
-                            placeholder="farmer@email.com"
-                            className={`w-full bg-darker border rounded-xl px-4 py-3.5
-                         text-[var(--text-primary)] placeholder-gray-600 focus:outline-none
-                         transition-colors ${fieldErrors.email ? 'border-red-500' : 'border-gray-700 focus:border-accent'}`}
-                        />
-                        {fieldErrors.email && <p className="text-red-400 text-xs mt-1">{fieldErrors.email}</p>}
+                            required placeholder="farmer@email.com"
+                            className={inputStyle(fieldErrors.email)} />
+                        {fieldErrors.email && <p style={{ color: '#f87171', fontSize: '12px', marginTop: '4px' }}>{fieldErrors.email}</p>}
                     </div>
 
                     {/* Password */}
-                    <div className="relative">
-                        <label className="block text-gray-400 text-xs mb-1.5 font-medium">
-                            🔒 Password
-                        </label>
+                    <div style={{ position: 'relative' }}>
+                        <label style={labelStyle}>PASSWORD</label>
                         <input
-                            type={showPassword ? "text" : "password"}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
+                            type={showPassword ? "text" : "password"} value={password}
+                            onChange={(e) => setPassword(e.target.value)} required
                             placeholder="Min 8 characters"
-                            className="w-full bg-darker border border-gray-700 rounded-xl px-4 py-3.5
-                         text-[var(--text-primary)] placeholder-gray-600 focus:outline-none
-                         focus:border-accent transition-colors pr-12"
-                        />
-                        <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-[34px] text-gray-400 hover:text-accent
-                         transition-colors text-lg"
-                        >
+                            className="input-field" style={{ paddingRight: '48px' }} />
+                        <button type="button" onClick={() => setShowPassword(!showPassword)}
+                            style={{
+                                position: 'absolute', right: '14px', top: '38px',
+                                background: 'none', border: 'none', cursor: 'pointer',
+                                color: 'var(--text-muted)', fontSize: '18px',
+                            }}>
                             {showPassword ? "🙈" : "👁️"}
                         </button>
 
                         {/* Password Strength Bar */}
                         {password && (
-                            <div className="mt-2 fade-in">
-                                <div className="flex gap-1 mb-1">
+                            <div className="fade-in" style={{ marginTop: '8px' }}>
+                                <div style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
                                     {[1, 2, 3, 4, 5].map((i) => (
-                                        <div
-                                            key={i}
-                                            className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${i <= strength.level ? strength.color : "bg-gray-800"
-                                                }`}
-                                        />
+                                        <div key={i} style={{
+                                            height: '4px', flex: 1, borderRadius: '2px',
+                                            transition: 'all 0.3s',
+                                            background: i <= strength.level ? strength.color : 'var(--border)',
+                                        }} />
                                     ))}
                                 </div>
-                                <p className={`text-xs font-medium ${strength.level <= 2 ? "text-red-400" :
-                                        strength.level === 3 ? "text-blue-400" : "text-green-400"
-                                    }`}>
+                                <p style={{ fontSize: '12px', fontWeight: 600, color: strength.color }}>
                                     {strength.label}
                                 </p>
                             </div>
@@ -174,48 +160,43 @@ export default function RegisterPage({ onNavigate }) {
 
                     {/* Confirm Password */}
                     <div>
-                        <label className="block text-gray-400 text-xs mb-1.5 font-medium">
-                            🔒 Confirm Password
-                        </label>
-                        <input
-                            type="password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            required
+                        <label style={labelStyle}>CONFIRM PASSWORD</label>
+                        <input type="password" value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)} required
                             placeholder="Re-enter your password"
-                            className={`w-full bg-darker rounded-xl px-4 py-3.5 text-[var(--text-primary)] 
-                         placeholder-gray-600 focus:outline-none transition-colors border ${passwordsMismatch
-                                    ? "border-red-500 focus:border-red-400"
-                                    : passwordsMatch
-                                        ? "border-green-500"
-                                        : "border-gray-700 focus:border-accent"
-                                }`}
-                        />
-                        {passwordsMismatch && (
-                            <p className="text-red-400 text-xs mt-1">Passwords don't match</p>
-                        )}
-                        {passwordsMatch && (
-                            <p className="text-green-400 text-xs mt-1">✓ Passwords match</p>
-                        )}
+                            className="input-field"
+                            style={{
+                                borderColor: passwordsMismatch ? '#ef4444' : passwordsMatch ? '#22c55e' : undefined,
+                            }} />
+                        {passwordsMismatch && <p style={{ color: '#f87171', fontSize: '12px', marginTop: '4px' }}>Passwords don't match</p>}
+                        {passwordsMatch && <p style={{ color: '#22c55e', fontSize: '12px', marginTop: '4px' }}>✓ Passwords match</p>}
                     </div>
 
+                    {/* Role Selection */}
+                    <div>
+                        <label style={labelStyle}>ACCOUNT TYPE</label>
+                        <select value={role} onChange={(e) => setRole(e.target.value)} className="input-field" style={{ cursor: 'pointer' }}>
+                            <option value="FARMER">Farmer</option>
+                            <option value="AGRONOMIST">Agronomist / Expert</option>
+                        </select>
+                    </div>
+
+                    {/* Agronomist Code */}
+                    {role === "AGRONOMIST" && (
+                        <div className="fade-in">
+                            <label style={labelStyle}>AGRONOMIST ACCESS CODE</label>
+                            <input type="text" value={agronomistCode}
+                                onChange={(e) => setAgronomistCode(e.target.value)}
+                                required={role === "AGRONOMIST"} placeholder="Enter code (e.g. AGRI2026)"
+                                className="input-field" />
+                        </div>
+                    )}
+
                     {/* Submit Button */}
-                    <button
-                        type="submit"
-                        disabled={
-                            isLoading ||
-                            !fullName ||
-                            !email ||
-                            password.length < 8 ||
-                            password !== confirmPassword
-                        }
-                        className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r
-                       from-primary to-accent text-dark disabled:opacity-50
-                       hover:shadow-lg hover:shadow-accent/20 active:scale-[0.98]
-                       transition-all mt-2"
-                    >
+                    <button type="submit" disabled={isLoading || !fullName || !email || password.length < 8 || password !== confirmPassword}
+                        className="btn-primary" style={{ width: '100%', padding: '16px', fontSize: '16px', marginTop: '4px' }}>
                         {isLoading ? (
-                            <span className="flex items-center justify-center gap-2">
+                            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                                 <span className="loading-spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />
                                 Creating account...
                             </span>
@@ -225,22 +206,30 @@ export default function RegisterPage({ onNavigate }) {
                     </button>
                 </form>
 
+                {/* Divider */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', margin: '24px 0 20px' }}>
+                    <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+                    <span style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 500 }}>OR</span>
+                    <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+                </div>
+
                 {/* Login Link */}
-                <p className="text-center text-gray-500 text-sm mt-6">
+                <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
                     Already have an account?{" "}
-                    <button
-                        onClick={() => onNavigate("login")}
-                        className="text-accent font-semibold hover:underline"
-                    >
+                    <button onClick={() => onNavigate("login")} style={{
+                        background: 'none', border: 'none', color: 'var(--accent)',
+                        fontWeight: 700, cursor: 'pointer', fontSize: '14px',
+                    }}>
                         Login
                     </button>
                 </p>
 
                 {/* Back to Landing */}
-                <button
-                    onClick={() => onNavigate("landing")}
-                    className="w-full text-center text-gray-600 text-xs mt-4 hover:text-gray-400 transition-colors"
-                >
+                <button onClick={() => onNavigate("landing")} style={{
+                    display: 'block', width: '100%', background: 'none', border: 'none',
+                    color: 'var(--text-muted)', fontSize: '12px', cursor: 'pointer',
+                    textAlign: 'center', marginTop: '16px',
+                }}>
                     ← Back to Home
                 </button>
             </div>

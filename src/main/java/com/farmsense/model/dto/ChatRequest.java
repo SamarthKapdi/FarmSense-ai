@@ -13,4 +13,5 @@ public class ChatRequest {
     private String crop;
     private String language;
     private String farmerId;
+    private String imageBase64;
 }

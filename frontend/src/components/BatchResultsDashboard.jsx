@@ -72,7 +72,7 @@ export default function BatchResultsDashboard({
               </div>
             </div>
             
-            <button className="mt-3 w-full py-2 bg-darker rounded-lg text-xs font-medium text-gray-300 hover:text-accent transition-colors">
+            <button className="mt-3 w-full py-2 bg-[var(--bg-elevated)] rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:text-emerald-500 transition-colors">
               View Treatment Plan →
             </button>
           </div>

@@ -1,0 +1,140 @@
+{
+  "app": {
+    "name": "फार्मसेंस AI",
+    "tagline": "AI-संचालित फसल बुद्धिमत्ता"
+  },
+  "nav": {
+    "home": "होम",
+    "scan": "स्कैन",
+    "chat": "चैट",
+    "weather": "मौसम",
+    "market": "मंडी",
+    "activity": "गतिविधि",
+    "profile": "प्रोफ़ाइल",
+    "calendar": "कैलेंडर",
+    "logout": "लॉगआउट",
+    "login": "लॉगिन",
+    "register": "रजिस्टर"
+  },
+  "upload": {
+    "title": "अपनी फसल स्कैन करें",
+    "tap": "फोटो अपलोड करने के लिए टैप करें",
+    "format": "JPG, PNG • अधिकतम 10MB",
+    "select_crop": "फसल प्रकार चुनें",
+    "analyze": "AI से विश्लेषण करें",
+    "analyzing": "AI विश्लेषण कर रहा है..."
+  },
+  "weather": {
+    "title": "मौसम जानकारी",
+    "current": "वर्तमान स्थिति",
+    "hourly": "घंटेवार पूर्वानुमान",
+    "daily": "10 दिन का पूर्वानुमान",
+    "aqi": "वायु गुणवत्ता",
+    "map": "स्थान मानचित्र",
+    "search": "शहर खोजें...",
+    "sunrise": "सूर्योदय",
+    "sunset": "सूर्यास्त",
+    "wind": "हवा",
+    "humidity": "नमी",
+    "pressure": "दबाव",
+    "uv": "UV सूचकांक",
+    "cloud": "बादल",
+    "precipitation": "वर्षा",
+    "feels_like": "अनुभव",
+    "sun_moon": "सूर्य और चंद्रमा"
+  },
+  "market": {
+    "title": "मंडी भाव",
+    "table": "तालिका",
+    "trend": "रुझान",
+    "min": "न्यूनतम",
+    "max": "अधिकतम",
+    "modal": "मॉडल",
+    "market_name": "मंडी",
+    "updated": "अंतिम अपडेट",
+    "price_unit": "₹/क्विंटल",
+    "trend_title": "30 दिन का भाव रुझान"
+  },
+  "chat": {
+    "title": "कृषिGPT",
+    "subtitle": "आपका AI कृषि सहायक",
+    "placeholder": "फसल, रोग, उपचार के बारे में पूछें...",
+    "send": "भेजें",
+    "listening": "सुन रहा है...",
+    "thinking": "सोच रहा है..."
+  },
+  "activity": {
+    "title": "गतिविधि",
+    "dashboard": "डैशबोर्ड",
+    "scans": "स्कैन",
+    "chats": "चैट",
+    "analytics": "विश्लेषण",
+    "welcome": "वापसी पर स्वागत",
+    "total_scans": "कुल स्कैन",
+    "total_chats": "कुल चैट",
+    "diseases_found": "रोग पाए गए",
+    "days_active": "सक्रिय दिन",
+    "recent": "हाल की गतिविधि",
+    "no_scans": "अभी तक कोई स्कैन नहीं! अपनी पहली फसल फोटो अपलोड करें",
+    "no_chats": "अभी तक कोई चैट नहीं! कृषिGPT से कुछ भी पूछें"
+  },
+  "profile": {
+    "title": "प्रोफ़ाइल",
+    "name": "पूरा नाम",
+    "email": "ईमेल",
+    "phone": "फोन नंबर",
+    "location": "स्थान",
+    "save": "बदलाव सहेजें",
+    "change_password": "पासवर्ड बदलें"
+  },
+  "auth": {
+    "login_title": "वापसी पर स्वागत",
+    "register_title": "खाता बनाएं",
+    "email": "ईमेल",
+    "password": "पासवर्ड",
+    "confirm_password": "पासवर्ड की पुष्टि करें",
+    "forgot": "पासवर्ड भूल गए?",
+    "no_account": "खाता नहीं है?",
+    "have_account": "पहले से खाता है?"
+  },
+  "common": {
+    "loading": "लोड हो रहा है...",
+    "error": "कुछ गलत हो गया",
+    "retry": "पुनः प्रयास करें",
+    "save": "सहेजें",
+    "cancel": "रद्द करें",
+    "delete": "हटाएं",
+    "edit": "संपादित करें",
+    "search": "खोजें",
+    "filter": "फ़िल्टर",
+    "no_data": "कोई डेटा उपलब्ध नहीं",
+    "back": "वापस"
+  },
+  "disease": {
+    "confidence": "विश्वास",
+    "severity": "गंभीरता",
+    "treatment": "उपचार",
+    "prevention": "रोकथाम",
+    "organic": "जैविक उपचार",
+    "chemical": "रासायनिक उपचार",
+    "healthy": "आपकी फसल स्वस्थ दिखती है!",
+    "detected": "रोग का पता चला"
+  },
+  "calendar": {
+    "title": "फसल कैलेंडर",
+    "sowing": "बुवाई अवधि",
+    "harvest": "कटाई अवधि",
+    "irrigation": "सिंचाई",
+    "fertilizer": "उर्वरक",
+    "month_view": "मासिक दृश्य",
+    "generate": "कैलेंडर बनाएं"
+  },
+  "notifications": {
+    "title": "सूचनाएं",
+    "mark_read": "सभी पढ़ा हुआ करें",
+    "no_notifications": "अभी कोई सूचना नहीं",
+    "disease_alert": "रोग चेतावनी",
+    "weather_alert": "मौसम चेतावनी",
+    "advisory": "नई सलाह"
+  }
+}

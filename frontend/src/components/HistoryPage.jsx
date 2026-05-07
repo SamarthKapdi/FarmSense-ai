@@ -102,7 +102,7 @@ export default function HistoryPage({ farmerId, language, token }) {
             border transition-all
             ${showBookmarkedOnly
               ? 'bg-yellow-900/30 border-yellow-600/50 text-yellow-400'
-              : 'bg-darker/60 border-gray-700 text-gray-400 hover:border-accent hover:text-accent'
+              : 'bg-[var(--bg-elevated)] border-[var(--border)] text-[var(--text-muted)] hover:border-emerald-500 hover:text-emerald-500'
             }`}
         >
           <span>{showBookmarkedOnly ? '★' : '☆'}</span>
@@ -155,10 +155,10 @@ export default function HistoryPage({ farmerId, language, token }) {
             <div
               key={report.id}
               className={`
-                bg-darker/80 border border-gray-800/50 rounded-2xl 
+                bg-[var(--bg-elevated)] border border-[var(--border)] rounded-2xl 
                 p-4 border-l-4 transition-all duration-300
                 ${getSeverityBorder(report.severity)}
-                ${expandedId === report.id ? 'border-gray-700' : ''}
+                ${expandedId === report.id ? 'border-[var(--border-focus)]' : ''}
               `}
             >
               {/* Summary Row */}
@@ -218,7 +218,7 @@ export default function HistoryPage({ farmerId, language, token }) {
               </button>
 
               {/* Action Buttons Row */}
-              <div className="flex gap-2 mt-2 pt-2 border-t border-gray-800/30">
+              <div className="flex gap-2 mt-2 pt-2 border-t border-[var(--border)]">
                 {/* Bookmark Button */}
                 <button
                   onClick={(e) => { e.stopPropagation(); handleToggleBookmark(report.id); }}
@@ -246,7 +246,7 @@ export default function HistoryPage({ farmerId, language, token }) {
               {/* Expanded Content */}
               {expandedId === report.id && (
                 <div
-                  className="mt-3 pt-3 border-t border-gray-800/50 
+                  className="mt-3 pt-3 border-t border-[var(--border)] 
                               fade-in space-y-3"
                 >
                   {/* Yield Loss */}

@@ -265,7 +265,11 @@ async def predict(image: UploadFile = File(...)):
 
     try:
         contents = await image.read()
-        img = Image.open(io.BytesIO(contents)).convert("RGB")
+        try:
+            img = Image.open(io.BytesIO(contents)).convert("RGB")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail="Invalid image file format")
+
         tensor = transform(img).unsqueeze(0)
 
         with torch.no_grad():
@@ -310,9 +314,28 @@ async def predict(image: UploadFile = File(...)):
             "top3Predictions": top3,
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("Prediction failed: %s", e)
-        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
+        # Fallback response
+        return {
+            "diseaseName": "Detection Error",
+            "rawClass": "Error",
+            "confidence": 0.0,
+            "isHealthy": False,
+            "severity": "Unknown",
+            "yieldLossEstimate": "Unknown",
+            "symptoms": ["The AI system encountered an unexpected error processing this image."],
+            "organicTreatment": ["Please try capturing a clearer image."],
+            "chemicalTreatment": ["No chemical treatment recommended until diagnosis is successful."],
+            "preventiveMeasures": ["Ensure good lighting and focus when taking pictures."],
+            "bestTimeToTreat": "N/A",
+            "estimatedRecoveryCost": "N/A",
+            "urgencyLevel": "NONE",
+            "top3Predictions": [],
+            "error": str(e)
+        }
 
 
 if __name__ == "__main__":

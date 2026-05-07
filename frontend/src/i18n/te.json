@@ -1,0 +1,14 @@
+{
+  "app": { "name": "ఫార్మ్‌సెన్స్ AI", "tagline": "AI-ఆధారిత పంట మేధస్సు" },
+  "nav": { "home": "హోమ్", "scan": "స్కాన్", "detect": "గుర్తించు", "chat": "చాట్", "weather": "వాతావరణం", "market": "మార్కెట్", "activity": "కార్యకలాపం", "profile": "ప్రొఫైల్", "calendar": "క్యాలెండర్", "history": "చరిత్ర", "analytics": "విశ్లేషణ", "logout": "లాగౌట్", "login": "లాగిన్", "register": "నమోదు" },
+  "upload": { "title": "మీ పంటను స్కాన్ చేయండి", "tap": "ఫోటోలు అప్‌లోడ్ చేయడానికి నొక్కండి", "format": "JPG, PNG • గరిష్టంగా 10MB", "select_crop": "పంట రకాన్ని ఎంచుకోండి", "analyze": "AI తో విశ్లేషించండి", "analyzing": "AI విశ్లేషిస్తోంది..." },
+  "weather": { "title": "వాతావరణ మేధస్సు", "current": "ప్రస్తుత పరిస్థితులు", "hourly": "గంటవారీ సూచన", "daily": "10 రోజుల సూచన", "aqi": "గాలి నాణ్యత", "map": "స్థాన మ్యాప్", "search": "నగరాన్ని వెతకండి...", "sunrise": "సూర్యోదయం", "sunset": "సూర్యాస్తమయం", "wind": "గాలి", "humidity": "తేమ", "pressure": "పీడనం", "uv": "UV సూచిక", "cloud": "మేఘావరణం", "precipitation": "వర్షపాతం", "feels_like": "అనుభూతి", "sun_moon": "సూర్యుడు & చంద్రుడు" },
+  "market": { "title": "మండి ధరలు", "table": "పట్టిక", "trend": "ధోరణి", "min": "కనిష్ట", "max": "గరిష్ట", "modal": "మోడల్", "market_name": "మార్కెట్", "updated": "చివరి నవీకరణ", "price_unit": "₹/క్వింటాల్", "trend_title": "30 రోజుల ధర ధోరణి" },
+  "chat": { "title": "కృషిGPT", "subtitle": "మీ AI వ్యవసాయ సహాయకుడు", "placeholder": "పంటలు, వ్యాధులు, చికిత్సల గురించి అడగండి...", "send": "పంపు", "listening": "వింటోంది...", "thinking": "ఆలోచిస్తోంది..." },
+  "common": { "loading": "లోడ్ అవుతోంది...", "error": "ఏదో తప్పు జరిగింది", "retry": "మళ్ళీ ప్రయత్నించండి", "save": "సేవ్", "cancel": "రద్దు", "more": "మరింత", "search": "వెతుకు", "no_data": "డేటా అందుబాటులో లేదు", "back": "వెనుకకు" },
+  "disease": { "confidence": "విశ్వాసం", "severity": "తీవ్రత", "treatment": "చికిత్స", "prevention": "నివారణ", "organic": "సేంద్రీయ పరిష్కారాలు", "chemical": "రసాయన చికిత్స", "healthy": "మీ పంట ఆరోగ్యంగా ఉంది!", "detected": "వ్యాధి గుర్తించబడింది" },
+  "calendar": { "title": "పంట క్యాలెండర్", "sowing": "విత్తన కాలం", "harvest": "కోత కాలం", "irrigation": "నీటిపారుదల", "fertilizer": "ఎరువు", "month_view": "నెల వీక్షణ", "generate": "క్యాలెండర్ రూపొందించు" },
+  "notifications": { "title": "నోటిఫికేషన్లు", "mark_read": "అన్నీ చదివినట్లు గుర్తించు", "no_notifications": "నోటిఫికేషన్లు లేవు", "disease_alert": "వ్యాధి హెచ్చరిక", "weather_alert": "వాతావరణ హెచ్చరిక", "advisory": "కొత్త సలహా" },
+  "auth": { "login_title": "మళ్ళీ స్వాగతం", "register_title": "ఖాతా సృష్టించు", "email": "ఈమెయిల్", "password": "పాస్‌వర్డ్", "confirm_password": "పాస్‌వర్డ్ నిర్ధారించు", "forgot": "పాస్‌వర్డ్ మర్చిపోయారా?", "no_account": "ఖాతా లేదా?", "have_account": "ఇప్పటికే ఖాతా ఉందా?" },
+  "profile": { "title": "ప్రొఫైల్", "name": "పూర్తి పేరు", "email": "ఈమెయిల్", "phone": "ఫోన్", "location": "స్థానం", "save": "మార్పులు సేవ్ చేయి", "change_password": "పాస్‌వర్డ్ మార్చు" }
+}

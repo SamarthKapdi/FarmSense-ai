@@ -1,0 +1,7 @@
+{
+  "app": { "name": "ਫਾਰਮਸੈਂਸ AI", "tagline": "AI-ਸੰਚਾਲਿਤ ਫਸਲ ਖੁਫੀਆ" },
+  "nav": { "home": "ਹੋਮ", "scan": "ਸਕੈਨ", "detect": "ਖੋਜੋ", "chat": "ਚੈਟ", "weather": "ਮੌਸਮ", "market": "ਮਾਰਕੀਟ", "activity": "ਗਤੀਵਿਧੀ", "profile": "ਪ੍ਰੋਫਾਈਲ", "calendar": "ਕੈਲੰਡਰ", "history": "ਇਤਿਹਾਸ", "analytics": "ਵਿਸ਼ਲੇਸ਼ਣ", "logout": "ਲਾਗਆਊਟ", "login": "ਲਾਗਇਨ", "register": "ਰਜਿਸਟਰ" },
+  "upload": { "title": "ਆਪਣੀ ਫਸਲ ਸਕੈਨ ਕਰੋ", "tap": "ਫੋਟੋਆਂ ਅੱਪਲੋਡ ਕਰਨ ਲਈ ਟੈਪ ਕਰੋ", "format": "JPG, PNG • ਵੱਧ ਤੋਂ ਵੱਧ 10MB", "select_crop": "ਫਸਲ ਦੀ ਕਿਸਮ ਚੁਣੋ", "analyze": "AI ਨਾਲ ਵਿਸ਼ਲੇਸ਼ਣ ਕਰੋ", "analyzing": "AI ਵਿਸ਼ਲੇਸ਼ਣ ਕਰ ਰਿਹਾ ਹੈ..." },
+  "common": { "loading": "ਲੋਡ ਹੋ ਰਿਹਾ ਹੈ...", "error": "ਕੁਝ ਗਲਤ ਹੋ ਗਿਆ", "retry": "ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ", "save": "ਸੇਵ ਕਰੋ", "cancel": "ਰੱਦ ਕਰੋ", "more": "ਹੋਰ", "search": "ਖੋਜੋ", "no_data": "ਕੋਈ ਡਾਟਾ ਉਪਲਬਧ ਨਹੀਂ", "back": "ਪਿੱਛੇ" },
+  "notifications": { "title": "ਸੂਚਨਾਵਾਂ", "mark_read": "ਸਭ ਨੂੰ ਪੜ੍ਹਿਆ ਹੋਇਆ ਨਿਸ਼ਾਨਬੱਧ ਕਰੋ", "no_notifications": "ਕੋਈ ਸੂਚਨਾਵਾਂ ਨਹੀਂ" }
+}

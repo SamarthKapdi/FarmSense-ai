@@ -124,7 +124,7 @@ export default function TreatmentTabs({ result, language, farmerId, token }) {
             transition-all duration-300 border
             ${copied
               ? 'bg-green-900/40 border-green-600/50 text-green-400'
-              : 'bg-darker/60 border-gray-700 text-gray-400 hover:border-accent hover:text-accent'
+              : 'bg-[var(--bg-elevated)] border-[var(--border)] text-[var(--text-muted)] hover:border-emerald-500 hover:text-emerald-500'
             }`}
         >
           <span>{copied ? '✅' : '📋'}</span>
@@ -133,7 +133,7 @@ export default function TreatmentTabs({ result, language, farmerId, token }) {
       </div>
 
       {/* Tab Buttons */}
-      <div className="flex gap-2 mb-4 bg-darker/50 rounded-xl p-1.5">
+      <div className="flex gap-2 mb-4 bg-[var(--bg-elevated)] rounded-xl p-1.5">
         {TABS.map((tab) => (
           <button
             key={tab.id}
@@ -163,7 +163,7 @@ export default function TreatmentTabs({ result, language, farmerId, token }) {
               <div
                 key={index}
                 className="flex items-start gap-3 py-3 
-                           border-b border-gray-800/50 last:border-b-0"
+                           border-b border-[var(--border)] last:border-b-0"
               >
                 <div
                   className="flex-shrink-0 w-7 h-7 bg-accent text-dark 
@@ -184,7 +184,7 @@ export default function TreatmentTabs({ result, language, farmerId, token }) {
 
         {/* Best Time to Treat */}
         {result.bestTimeToTreat && (
-          <div className="mt-4 pt-3 border-t border-gray-800/50">
+          <div className="mt-4 pt-3 border-t border-[var(--border)]">
             <p className="text-xs text-gray-500 mb-1">🕐 Best time to treat</p>
             <p className="text-accent text-sm font-medium">
               {result.bestTimeToTreat}
@@ -203,7 +203,7 @@ export default function TreatmentTabs({ result, language, farmerId, token }) {
             border transition-all duration-300
             ${
               planLoading
-                ? 'bg-darker border-gray-700 text-gray-500 cursor-wait'
+                ? 'bg-[var(--bg-elevated)] border-[var(--border)] text-[var(--text-muted)] cursor-wait'
                 : 'bg-primary/20 border-accent/40 text-accent hover:bg-primary/30 hover:border-accent active:scale-[0.98]'
             }
           `}
@@ -225,7 +225,7 @@ export default function TreatmentTabs({ result, language, farmerId, token }) {
       {/* Treatment Plan Display */}
       {showPlan && planDays.length > 0 && (
         <div
-          className="mt-4 bg-darker/80 border border-green-900/40 
+          className="mt-4 bg-[var(--bg-elevated)] border border-emerald-500/20 
                         rounded-2xl p-4 fade-in"
         >
           <h4 className="text-[var(--text-primary)] font-bold mb-3 flex items-center gap-2">
@@ -252,7 +252,7 @@ export default function TreatmentTabs({ result, language, farmerId, token }) {
                 {expandedDay === index && (
                   <div
                     className="px-3 py-2 text-gray-300 text-sm 
-                                bg-darker/50 rounded-b-lg border-x 
+                                bg-[var(--bg-elevated)] rounded-b-lg border-x 
                                 border-b border-green-900/20 fade-in"
                   >
                     {item.action}

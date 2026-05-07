@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { translations } from '../translations';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { getTranslation, LANGUAGES } from '../i18n';
 
 const LanguageContext = createContext();
 
@@ -13,13 +13,16 @@ export const LanguageProvider = ({ children }) => {
         document.documentElement.lang = language;
     }, [language]);
 
-    const t = (key) => {
-        const langDict = translations[language] || translations.en;
-        return langDict[key] || translations.en[key] || key;
-    };
+    /**
+     * Translate a dot-separated key path.
+     * Usage: t('nav.home') → "Home" | "होम" | "होम"
+     */
+    const t = useCallback((keyPath) => {
+        return getTranslation(language, keyPath);
+    }, [language]);
 
     return (
-        <LanguageContext.Provider value={{ language, setLanguage, t }}>
+        <LanguageContext.Provider value={{ language, setLanguage, t, LANGUAGES }}>
             {children}
         </LanguageContext.Provider>
     );

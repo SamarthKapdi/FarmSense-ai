@@ -1,5 +1,6 @@
 package com.farmsense.service;
 
+import com.farmsense.model.dto.AuthRequest;
 import com.farmsense.model.dto.AuthResponse;
 import com.farmsense.model.entity.User;
 import com.farmsense.repository.UserRepository;
@@ -38,7 +39,13 @@ class AuthServiceTest {
         });
         when(jwtService.generateToken(any())).thenReturn("jwt-token-123");
 
-        AuthResponse resp = authService.register("Test User", "new@test.com", "password123");
+        AuthRequest request = new AuthRequest();
+        request.setEmail("new@test.com");
+        request.setPassword("password123");
+        request.setFullName("Test User");
+        request.setRole("FARMER");
+        
+        AuthResponse resp = authService.register(request);
 
         assertNotNull(resp.getToken());
         assertEquals("jwt-token-123", resp.getToken());
@@ -52,7 +59,13 @@ class AuthServiceTest {
     void registerDuplicateEmail() {
         when(userRepository.findByEmail("exists@test.com")).thenReturn(Optional.of(new User()));
 
-        AuthResponse resp = authService.register("Dup User", "exists@test.com", "password123");
+        AuthRequest request = new AuthRequest();
+        request.setEmail("exists@test.com");
+        request.setPassword("password123");
+        request.setFullName("Dup User");
+        request.setRole("FARMER");
+        
+        AuthResponse resp = authService.register(request);
 
         assertNull(resp.getToken());
         assertTrue(resp.getMessage().contains("already registered"));
@@ -64,10 +77,76 @@ class AuthServiceTest {
     void registerShortPassword() {
         when(userRepository.findByEmail("new@test.com")).thenReturn(Optional.empty());
 
-        AuthResponse resp = authService.register("Test", "new@test.com", "short");
+        AuthRequest request = new AuthRequest();
+        request.setEmail("new@test.com");
+        request.setPassword("short");
+        request.setFullName("Test");
+        
+        AuthResponse resp = authService.register(request);
 
         assertNull(resp.getToken());
         assertTrue(resp.getMessage().contains("8 characters"));
+    }
+    
+    @Test
+    @DisplayName("Register — agronomist with wrong code")
+    void registerAgronomistWrongCode() {
+        when(userRepository.findByEmail("agro@test.com")).thenReturn(Optional.empty());
+
+        AuthRequest request = new AuthRequest();
+        request.setEmail("agro@test.com");
+        request.setPassword("password123");
+        request.setFullName("Test Agro");
+        request.setRole("AGRONOMIST");
+        request.setAgronomistCode("WRONGCODE");
+        
+        AuthResponse resp = authService.register(request);
+
+        assertNull(resp.getToken());
+        assertTrue(resp.getMessage().contains("Invalid Agronomist Code"));
+    }
+
+    @Test
+    @DisplayName("Register — agronomist with correct code")
+    void registerAgronomistCorrectCode() {
+        when(userRepository.findByEmail("agro@test.com")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode("password123")).thenReturn("$2a$hashed");
+        when(userRepository.save(any(User.class))).thenAnswer(i -> {
+            User u = i.getArgument(0);
+            u.setId("uuid-2");
+            return u;
+        });
+        when(jwtService.generateToken(any())).thenReturn("jwt-token-agro");
+
+        AuthRequest request = new AuthRequest();
+        request.setEmail("agro@test.com");
+        request.setPassword("password123");
+        request.setFullName("Test Agro");
+        request.setRole("AGRONOMIST");
+        request.setAgronomistCode("AGRI2026");
+        
+        AuthResponse resp = authService.register(request);
+
+        assertNotNull(resp.getToken());
+        assertEquals("jwt-token-agro", resp.getToken());
+        assertEquals("ROLE_AGRONOMIST", resp.getRole());
+    }
+
+    @Test
+    @DisplayName("Register — attempt as admin is rejected")
+    void registerAdminRejected() {
+        when(userRepository.findByEmail("admin@test.com")).thenReturn(Optional.empty());
+
+        AuthRequest request = new AuthRequest();
+        request.setEmail("admin@test.com");
+        request.setPassword("password123");
+        request.setFullName("Test Admin");
+        request.setRole("ADMIN");
+        
+        AuthResponse resp = authService.register(request);
+
+        assertNull(resp.getToken());
+        assertTrue(resp.getMessage().contains("Cannot register as ADMIN"));
     }
 
     @Test
@@ -115,7 +194,11 @@ class AuthServiceTest {
     void registerNullPassword() {
         when(userRepository.findByEmail("new@test.com")).thenReturn(Optional.empty());
 
-        AuthResponse resp = authService.register("Test", "new@test.com", null);
+        AuthRequest request = new AuthRequest();
+        request.setEmail("new@test.com");
+        request.setFullName("Test");
+        
+        AuthResponse resp = authService.register(request);
 
         assertNull(resp.getToken());
         assertTrue(resp.getMessage().contains("8 characters"));

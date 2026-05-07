@@ -1,0 +1,4 @@
+ALTER TABLE users ADD COLUMN IF NOT EXISTS enabled BOOLEAN DEFAULT TRUE;
+UPDATE users SET enabled = TRUE;
+UPDATE users SET role = 'ROLE_FARMER' WHERE role = 'FARMER';
+UPDATE users SET role = 'ROLE_ADMIN' WHERE role = 'ADMIN';

@@ -23,8 +23,7 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody AuthRequest request) {
-        AuthResponse response = authService.register(
-                request.getFullName(), request.getEmail(), request.getPassword());
+        AuthResponse response = authService.register(request);
         if (response.getToken() != null) {
             return ResponseEntity.ok(ApiResponse.ok("Registration successful", response));
         }

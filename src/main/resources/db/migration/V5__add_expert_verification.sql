@@ -1,0 +1,2 @@
+ALTER TABLE detection_reports ADD COLUMN IF NOT EXISTS verified BOOLEAN DEFAULT FALSE;
+ALTER TABLE detection_reports ADD COLUMN IF NOT EXISTS expert_notes TEXT;

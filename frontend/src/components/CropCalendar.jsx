@@ -79,11 +79,11 @@ export default function CropCalendar() {
                 <select
                     value={selectedCrop}
                     onChange={(e) => handleCropChange(e.target.value)}
-                    className="w-full bg-darker border border-gray-700 rounded-xl px-4 py-3 
+                    className="w-full bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl px-4 py-3 
                         text-sm text-[var(--text-primary)] focus:outline-none focus:border-accent"
                 >
                     {CROPS.map(crop => (
-                        <option key={crop} value={crop} className="bg-darker">{crop}</option>
+                        <option key={crop} value={crop} className="bg-[var(--bg-card)]">{crop}</option>
                     ))}
                 </select>
             </div>
@@ -94,7 +94,7 @@ export default function CropCalendar() {
                 disabled={loading}
                 className={`w-full py-3.5 rounded-xl font-bold text-sm border transition-all duration-300 mb-4
                     ${loading
-                        ? 'bg-darker border-gray-700 text-gray-500 cursor-wait'
+                        ? 'bg-[var(--bg-elevated)] border-[var(--border)] text-[var(--text-muted)] cursor-wait'
                         : 'bg-primary/20 border-accent/40 text-accent hover:bg-primary/30 hover:border-accent active:scale-[0.98]'
                     }`}
             >
@@ -114,55 +114,65 @@ export default function CropCalendar() {
 
             {/* Calendar Display */}
             {calendar && calendar.months && calendar.months.length > 0 && (
-                <div className="space-y-3">
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
                     {/* Legend */}
-                    <div className="flex gap-4 text-xs text-gray-400 mb-2">
-                        <span className="flex items-center gap-1">
-                            <span className="w-3 h-3 rounded-full" style={{ background: MONTH_COLORS.sowing }}></span> Sowing
+                    <div className="flex gap-4 justify-center text-xs text-[var(--text-muted)] mb-4 bg-[var(--bg-elevated)] py-2 rounded-xl border border-[var(--border)]">
+                        <span className="flex items-center gap-1.5 font-medium">
+                            <span className="w-2.5 h-2.5 rounded-full" style={{ background: MONTH_COLORS.sowing }}></span> Sowing
                         </span>
-                        <span className="flex items-center gap-1">
-                            <span className="w-3 h-3 rounded-full" style={{ background: MONTH_COLORS.growing }}></span> Growing
+                        <span className="flex items-center gap-1.5 font-medium">
+                            <span className="w-2.5 h-2.5 rounded-full" style={{ background: MONTH_COLORS.growing }}></span> Growing
                         </span>
-                        <span className="flex items-center gap-1">
-                            <span className="w-3 h-3 rounded-full" style={{ background: MONTH_COLORS.harvesting }}></span> Harvest
+                        <span className="flex items-center gap-1.5 font-medium">
+                            <span className="w-2.5 h-2.5 rounded-full" style={{ background: MONTH_COLORS.harvesting }}></span> Harvest
                         </span>
                     </div>
 
-                    {calendar.months.map((m, index) => (
-                        <div key={index}
-                            className="disease-card flex gap-3 items-start"
-                            style={{ borderLeft: `4px solid ${getMonthColor(m.activities)}` }}>
-                            <div className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center font-bold text-sm"
-                                style={{ background: getMonthColor(m.activities) + '20', color: getMonthColor(m.activities) }}>
-                                {(m.month || '').substring(0, 3)}
-                            </div>
-                            <div className="flex-1">
-                                <h4 className="text-sm font-semibold text-[var(--text-primary)]">{m.month}</h4>
-                                {Array.isArray(m.activities) && m.activities.length > 0 ? (
-                                    <ul className="mt-1 space-y-0.5">
-                                        {m.activities.map((act, i) => (
-                                            <li key={i} className="text-xs text-gray-400 flex items-start gap-1.5">
-                                                <span className="text-accent mt-0.5">•</span>
-                                                <span>{act}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                ) : (
-                                    <p className="text-xs text-gray-500 mt-1">No activities listed</p>
-                                )}
-                            </div>
-                        </div>
-                    ))}
+                    <div className="relative pl-6 border-l-2 border-[var(--border)] space-y-6">
+                        {calendar.months.map((m, index) => {
+                            const color = getMonthColor(m.activities);
+                            return (
+                                <div key={index} className="relative">
+                                    {/* Timeline dot */}
+                                    <div className="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full border-4 border-[var(--bg-main)]"
+                                         style={{ backgroundColor: color }}>
+                                    </div>
+                                    
+                                    <div className="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-2xl p-4 transition-all hover:border-[var(--border-focus)]">
+                                        <div className="flex justify-between items-center mb-3">
+                                            <h4 className="text-sm font-bold text-[var(--text-primary)]" style={{ color: color }}>
+                                                {m.month}
+                                            </h4>
+                                        </div>
+                                        
+                                        {Array.isArray(m.activities) && m.activities.length > 0 ? (
+                                            <ul className="space-y-1.5">
+                                                {m.activities.map((act, i) => (
+                                                    <li key={i} className="text-xs text-[var(--text-secondary)] flex items-start gap-2">
+                                                        <span style={{ color: color }} className="mt-0.5 text-[10px]">❖</span>
+                                                        <span className="leading-relaxed">{act}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <p className="text-xs text-[var(--text-muted)] italic">Resting period / No major activities</p>
+                                        )}
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
                 </div>
             )}
 
             {/* Raw fallback if parsing failed */}
             {calendar && (!calendar.months || calendar.months.length === 0) && calendar.raw && (
-                <div className="disease-card">
-                    <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-2">📋 Calendar for {calendar.crop}</h4>
-                    <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">{calendar.raw}</p>
+                <div className="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-2xl p-4 animate-in fade-in">
+                    <h4 className="text-sm font-bold text-[var(--text-primary)] mb-3">📋 Plan for {calendar.crop}</h4>
+                    <p className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap leading-relaxed">{calendar.raw}</p>
                 </div>
             )}
         </div>
     )
 }
+

@@ -75,6 +75,10 @@ public class JwtService {
         return extractClaims(token).get("fullName", String.class);
     }
 
+    public String extractRole(String token) {
+        return extractClaims(token).get("role", String.class);
+    }
+
     private Claims extractClaims(String token) {
         return Jwts.parser()
                 .verifyWith(getSigningKey())

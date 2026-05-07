@@ -1,0 +1,144 @@
+{
+  "app": {
+    "name": "FarmSense AI",
+    "tagline": "AI-Powered Crop Intelligence"
+  },
+  "nav": {
+    "home": "Home",
+    "scan": "Scan",
+    "detect": "Detect",
+    "chat": "Chat",
+    "weather": "Weather",
+    "market": "Market",
+    "activity": "Activity",
+    "profile": "Profile",
+    "calendar": "Calendar",
+    "history": "History",
+    "analytics": "Analytics",
+    "logout": "Logout",
+    "login": "Login",
+    "register": "Register"
+  },
+  "upload": {
+    "title": "Scan Your Crop",
+    "tap": "Tap to upload or drag photos",
+    "format": "JPG, PNG • Max 10MB",
+    "select_crop": "Select Crop Type",
+    "analyze": "Analyze with AI",
+    "analyzing": "AI is analyzing..."
+  },
+  "weather": {
+    "title": "Weather Intelligence",
+    "current": "Current Conditions",
+    "hourly": "Hourly Forecast",
+    "daily": "10-Day Forecast",
+    "aqi": "Air Quality",
+    "map": "Location Map",
+    "search": "Search city...",
+    "sunrise": "Sunrise",
+    "sunset": "Sunset",
+    "wind": "Wind",
+    "humidity": "Humidity",
+    "pressure": "Pressure",
+    "uv": "UV Index",
+    "cloud": "Cloud Cover",
+    "precipitation": "Precipitation",
+    "feels_like": "Feels Like",
+    "sun_moon": "Sun & Moon"
+  },
+  "market": {
+    "title": "Mandi Prices",
+    "table": "Table",
+    "trend": "Trend",
+    "min": "Min",
+    "max": "Max",
+    "modal": "Modal",
+    "market_name": "Market",
+    "updated": "Last updated",
+    "price_unit": "₹/quintal",
+    "trend_title": "30 Day Price Trend"
+  },
+  "chat": {
+    "title": "KrishiGPT",
+    "subtitle": "Your AI Farming Assistant",
+    "placeholder": "Ask about crops, diseases, treatments...",
+    "send": "Send",
+    "listening": "Listening...",
+    "thinking": "Thinking..."
+  },
+  "activity": {
+    "title": "Activity",
+    "dashboard": "Dashboard",
+    "scans": "Scans",
+    "chats": "Chats",
+    "analytics": "Analytics",
+    "welcome": "Welcome back",
+    "total_scans": "Total Scans",
+    "total_chats": "Total Chats",
+    "diseases_found": "Diseases Found",
+    "days_active": "Days Active",
+    "recent": "Recent Activity",
+    "no_scans": "No scans yet! Upload your first crop photo",
+    "no_chats": "No chats yet! Ask KrishiGPT anything"
+  },
+  "profile": {
+    "title": "Profile",
+    "name": "Full Name",
+    "email": "Email",
+    "phone": "Phone Number",
+    "location": "Location",
+    "save": "Save Changes",
+    "change_password": "Change Password"
+  },
+  "auth": {
+    "login_title": "Welcome Back",
+    "register_title": "Create Account",
+    "email": "Email",
+    "password": "Password",
+    "confirm_password": "Confirm Password",
+    "forgot": "Forgot Password?",
+    "no_account": "Don't have an account?",
+    "have_account": "Already have an account?"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Try Again",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "filter": "Filter",
+    "more": "More",
+    "no_data": "No data available",
+    "back": "Back"
+  },
+  "disease": {
+    "confidence": "Confidence",
+    "severity": "Severity",
+    "treatment": "Treatment",
+    "prevention": "Prevention",
+    "organic": "Organic Solutions",
+    "chemical": "Chemical Treatment",
+    "healthy": "Your crop looks healthy!",
+    "detected": "Disease Detected"
+  },
+  "calendar": {
+    "title": "Crop Calendar",
+    "sowing": "Sowing Period",
+    "harvest": "Harvest Period",
+    "irrigation": "Irrigation",
+    "fertilizer": "Fertilizer",
+    "month_view": "Month View",
+    "generate": "Generate Calendar"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "mark_read": "Mark all as read",
+    "no_notifications": "No notifications yet",
+    "disease_alert": "Disease Alert",
+    "weather_alert": "Weather Alert",
+    "advisory": "New Advisory"
+  }
+}

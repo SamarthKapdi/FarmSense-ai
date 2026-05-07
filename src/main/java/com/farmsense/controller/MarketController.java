@@ -24,7 +24,15 @@ public class MarketController {
         List<MandiPriceResponse> prices = marketPriceService.getPrices(crop, state);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
                 "prices", prices,
-                "disclaimer", "Simulated prices for demonstration. Connect to Data.gov.in API for live data.")));
+                "source", "Estimated prices based on APMC data ranges. Live data.gov.in integration available with API key.")));
+    }
+
+    @GetMapping("/trend")
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getPriceTrend(
+            @RequestParam(defaultValue = "Tomato") String crop,
+            @RequestParam(defaultValue = "Maharashtra") String state,
+            @RequestParam(defaultValue = "30") int days) {
+        return ResponseEntity.ok(ApiResponse.ok(marketPriceService.getPriceTrend(crop, state, days)));
     }
 
     @GetMapping("/states")

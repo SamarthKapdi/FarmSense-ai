@@ -139,7 +139,7 @@ export default function ProfilePage({ token }) {
         );
     }
 
-    const inputClass = "w-full bg-darker border border-gray-700 rounded-xl px-4 py-3 text-[var(--text-primary)] placeholder-gray-600 focus:outline-none focus:border-accent transition-colors text-sm";
+    const inputClass = "w-full bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition-colors text-sm";
     const labelClass = "block text-gray-400 text-xs mb-1.5 font-medium";
 
     return (

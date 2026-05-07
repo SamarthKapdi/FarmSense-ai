@@ -51,7 +51,7 @@ public class ChatController {
         log.info("Chat — Crop: {}, Language: {}, User: {}", request.getCrop(), request.getLanguage(), userEmail);
 
         String answer = krishiGPTService.askKrishiGPT(
-                userId, request.getQuestion(), request.getCrop(), request.getLanguage());
+                userId, request.getQuestion(), request.getCrop(), request.getLanguage(), request.getImageBase64());
 
         if (userId != null) {
             ChatHistory chatHistory = ChatHistory.builder()
@@ -145,7 +145,7 @@ public class ChatController {
                 "\"month\" (month name), \"activities\" (array of activity strings). " +
                 "No markdown, no explanation, just the JSON array.";
 
-        String calendarData = krishiGPTService.askKrishiGPT(userId, prompt, crop, "en");
+        String calendarData = krishiGPTService.askKrishiGPT(userId, prompt, crop, "en", null);
 
         calendarCache.put(cacheKey, new CachedCalendar(calendarData, System.currentTimeMillis()));
 

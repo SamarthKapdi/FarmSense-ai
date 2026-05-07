@@ -59,6 +59,12 @@ public class DetectionReport {
     @Builder.Default
     private boolean isHealthy = false;
 
+    @Builder.Default
+    private boolean verified = false;
+
+    @Column(columnDefinition = "TEXT")
+    private String expertNotes;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 }

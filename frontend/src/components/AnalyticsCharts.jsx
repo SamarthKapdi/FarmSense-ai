@@ -117,7 +117,7 @@ export default function AnalyticsCharts() {
                         {cropData.map((item, i) => (
                             <div key={i} className="flex items-center gap-3">
                                 <span className="text-sm text-gray-300 w-20">{item.cropName}</span>
-                                <div className="flex-1 bg-darker rounded-full h-5 overflow-hidden">
+                                <div className="flex-1 bg-[var(--bg-elevated)] rounded-full h-5 overflow-hidden">
                                     <div className="h-full rounded-full transition-all duration-700"
                                         style={{
                                             width: `${Math.max(10, (item.count / Math.max(...cropData.map(c => c.count))) * 100)}%`,

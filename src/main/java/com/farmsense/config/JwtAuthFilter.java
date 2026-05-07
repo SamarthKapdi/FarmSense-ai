@@ -29,8 +29,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             FilterChain filterChain) throws ServletException, IOException {
         String authHeader = request.getHeader("Authorization");
 
+        String token = null;
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
+            token = authHeader.substring(7);
+        } else if (request.getParameter("token") != null) {
+            token = request.getParameter("token");
+        }
+
+        if (token != null) {
 
             if (jwtService.validateToken(token)) {
                 String email = jwtService.extractEmail(token);
@@ -41,9 +47,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 request.setAttribute("userEmail", email);
                 request.setAttribute("userName", fullName);
 
+                String role = jwtService.extractRole(token);
+                if (role == null || role.isEmpty()) {
+                    role = "ROLE_FARMER"; // fallback
+                }
+
+                var authority = new SimpleGrantedAuthority(role);
+                var authorities = List.of(authority);
+                
+                log.info("JWT Token Parsed -> Email: {}, Role Extracted: {}, Authorities Assigned: {}", email, role, authorities);
+
                 var auth = new UsernamePasswordAuthenticationToken(
                         email, null,
-                        List.of(new SimpleGrantedAuthority("ROLE_FARMER")));
+                        authorities);
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
         }

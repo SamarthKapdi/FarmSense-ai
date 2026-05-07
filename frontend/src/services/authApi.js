@@ -11,11 +11,11 @@ const unwrap = (json) => {
   return json
 }
 
-export const registerUser = async (fullName, email, password) => {
+export const registerUser = async (fullName, email, password, role = "FARMER", agronomistCode = "") => {
   const response = await fetch(`${BASE_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fullName, email, password }),
+    body: JSON.stringify({ fullName, email, password, role, agronomistCode }),
   })
   const json = await response.json()
   if (!response.ok) throw new Error(json.message || 'Registration failed')

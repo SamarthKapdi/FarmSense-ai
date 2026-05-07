@@ -65,9 +65,9 @@ export default function ResetPasswordPage({ onNavigate }) {
         );
     }
 
-    const inputClass = (field) => `w-full bg-darker border rounded-xl px-4 py-3.5
+    const inputClass = (field) => `w-full bg-[var(--bg-elevated)] border rounded-xl px-4 py-3.5
         text-[var(--text-primary)] placeholder-gray-600 focus:outline-none transition-colors
-        ${fieldErrors[field] ? 'border-red-500' : 'border-gray-700 focus:border-accent'}`;
+        ${fieldErrors[field] ? 'border-red-500' : 'border-[var(--border)] focus:border-emerald-500'}`;
 
     return (
         <div className="min-h-screen bg-dark flex items-center justify-center px-5">

@@ -92,4 +92,9 @@ public class SpringAIConfig {
     public ChatClient visionChatClient(@org.springframework.beans.factory.annotation.Qualifier("visionChatModel") OllamaChatModel visionChatModel) {
         return ChatClient.builder(visionChatModel).build();
     }
+
+    @Bean
+    public org.springframework.web.reactive.function.client.WebClient.Builder webClientBuilder() {
+        return org.springframework.web.reactive.function.client.WebClient.builder();
+    }
 }

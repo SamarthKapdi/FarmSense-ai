@@ -1,4 +1,4 @@
-# ── Java / Maven ──────────────────────────────────────────
+# Java / Maven
 target/
 *.class
 *.jar
@@ -9,7 +9,7 @@ target/
 mvnw
 mvnw.cmd
 
-# ── IDE ────────────────────────────────────────────────────
+# IDE
 .idea/
 *.iml
 .vscode/
@@ -19,7 +19,7 @@ mvnw.cmd
 .classpath
 .settings/
 
-# ── Node / React ───────────────────────────────────────────
+# Node / React
 frontend/node_modules/
 frontend/build/
 frontend/dist/
@@ -30,19 +30,25 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# ── Environment / Secrets ──────────────────────────────────
+# Python / AI Service
+ai-service/venv/
+ai-service/__pycache__/
+*.pyc
+__pycache__/
+
+# Environment / Secrets
 .env
 .env.local
 *.env
 application-prod.properties
 application-local.properties
 
-# ── OS ─────────────────────────────────────────────────────
+# OS
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# ── AI Model / Uploads ─────────────────────────────────────
+# AI Model / Uploads
 uploads/
 *.pt
 *.onnx

@@ -177,7 +177,7 @@ export default function ImageUploader({ language, farmerId, token, onResult }) {
           text-center cursor-pointer transition-all duration-300
           mb-5 overflow-hidden min-h-[220px] flex items-center justify-center
           ${selectedImages.length > 0
-                        ? "border-accent/50 bg-darker"
+                        ? "border-emerald-500/50 bg-[var(--bg-elevated)]"
                         : "border-gray-600 hover:border-accent hover:bg-accent/5"
                     }
         `}
@@ -190,7 +190,7 @@ export default function ImageUploader({ language, farmerId, token, onResult }) {
                                     <img
                                         src={imgObj.preview}
                                         alt={`Selected crop ${idx + 1}`}
-                                        className="rounded-xl w-full h-full object-cover border border-gray-700"
+                                        className="rounded-xl w-full h-full object-cover border border-[var(--border)]"
                                     />
                                     <button
                                         onClick={(e) => {
@@ -239,9 +239,9 @@ export default function ImageUploader({ language, farmerId, token, onResult }) {
                 <select
                     value={selectedCrop}
                     onChange={(e) => setSelectedCrop(e.target.value)}
-                    className="w-full bg-darker border border-gray-700 rounded-xl 
+                    className="w-full bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl 
                      px-4 py-3 text-[var(--text-primary)] focus:outline-none 
-                     focus:border-accent transition-colors appearance-none
+                     focus:border-emerald-500 transition-colors appearance-none
                      cursor-pointer"
                     style={{
                         backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2352B788' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E")`,
@@ -250,7 +250,7 @@ export default function ImageUploader({ language, farmerId, token, onResult }) {
                     }}
                 >
                     {CROPS.map((crop) => (
-                        <option key={crop} value={crop} className="bg-darker">
+                        <option key={crop} value={crop} className="bg-[var(--bg-card)]">
                             {crop}
                         </option>
                     ))}
@@ -265,7 +265,7 @@ export default function ImageUploader({ language, farmerId, token, onResult }) {
           w-full py-4 rounded-xl font-bold text-lg transition-all duration-300
           ${selectedImages.length > 0 && !isLoading
                         ? "bg-gradient-to-r from-primary to-accent text-[var(--text-primary)] hover:shadow-lg hover:shadow-accent/20 active:scale-[0.98]"
-                        : "bg-gray-800 text-gray-500 cursor-not-allowed"
+                        : "bg-[var(--bg-elevated)] text-[var(--text-muted)] cursor-not-allowed"
                     }
         `}
             >

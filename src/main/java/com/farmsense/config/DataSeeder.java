@@ -17,38 +17,72 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        long userCount = userRepository.count();
-
-        if (userCount > 0) {
-            log.info("ℹ️ Database already has {} users — skipping seed", userCount);
-            return;
-        }
-
-        log.info("✅ Seeding demo users into empty database...");
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
-        User demoUser = User.builder()
-                .fullName("Demo Farmer")
-                .email("demo@farmsense.com")
-                .passwordHash(encoder.encode("farm1234"))
-                .emailVerified(true)
-                .role("FARMER")
-                .preferredLanguage("en")
-                .preferredCrop("Tomato")
-                .build();
-        userRepository.save(demoUser);
-        log.info("✅ Seeded demo user  →  email: demo@farmsense.com  |  password: farm1234");
+        // 1. Update or Create Admin User
+        userRepository.findByEmail("admin@farmsense.ai").ifPresentOrElse(admin -> {
+            if (!"ROLE_ADMIN".equals(admin.getRole())) {
+                admin.setRole("ROLE_ADMIN");
+                userRepository.save(admin);
+                log.info("✅ Admin account ready (updated role)");
+            } else {
+                log.info("✅ Admin account ready");
+            }
+        }, () -> {
+            User adminUser = User.builder()
+                    .fullName("Admin User")
+                    .email("admin@farmsense.ai")
+                    .passwordHash(encoder.encode("admin1234"))
+                    .emailVerified(true)
+                    .role("ROLE_ADMIN")
+                    .build();
+            userRepository.save(adminUser);
+            log.info("✅ Admin account ready (created)");
+        });
 
-        User adminUser = User.builder()
-                .fullName("Admin User")
-                .email("admin@farmsense.com")
-                .passwordHash(encoder.encode("admin1234"))
-                .emailVerified(true)
-                .role("ADMIN")
-                .preferredLanguage("en")
-                .preferredCrop("Rice")
-                .build();
-        userRepository.save(adminUser);
-        log.info("✅ Seeded admin user →  email: admin@farmsense.com |  password: admin1234");
+        // 1.5 Clean up any other admins
+        userRepository.findAll().stream()
+            .filter(u -> "ROLE_ADMIN".equals(u.getRole()) && !"admin@farmsense.ai".equals(u.getEmail()))
+            .forEach(u -> {
+                log.info("Deleting old admin account: {}", u.getEmail());
+                userRepository.delete(u);
+            });
+
+        // 2. Insert Agronomists
+        createAgronomistIfNotFound(encoder, "Dr. Rajesh Kumar", "agronomist1@farmsense.com", "Agronomist1!");
+        createAgronomistIfNotFound(encoder, "Dr. Priya Sharma", "agronomist2@farmsense.com", "Agronomist2!");
+        
+        // 2.5 Clean up any other agronomists
+        userRepository.findAll().stream()
+            .filter(u -> "ROLE_AGRONOMIST".equals(u.getRole()) && 
+                         !"agronomist1@farmsense.com".equals(u.getEmail()) && 
+                         !"agronomist2@farmsense.com".equals(u.getEmail()))
+            .forEach(u -> {
+                log.info("Deleting old agronomist account: {}", u.getEmail());
+                userRepository.delete(u);
+            });
+            
+        log.info("✅ 2 Agronomist accounts ready");
+    }
+
+    private void createAgronomistIfNotFound(BCryptPasswordEncoder encoder, String name, String email, String password) {
+        userRepository.findByEmail(email).ifPresentOrElse(
+                user -> {
+                    if (!"ROLE_AGRONOMIST".equals(user.getRole())) {
+                        user.setRole("ROLE_AGRONOMIST");
+                        userRepository.save(user);
+                    }
+                },
+                () -> {
+                    User agro = User.builder()
+                            .fullName(name)
+                            .email(email)
+                            .passwordHash(encoder.encode(password))
+                            .emailVerified(true)
+                            .role("ROLE_AGRONOMIST")
+                            .build();
+                    userRepository.save(agro);
+                }
+        );
     }
 }

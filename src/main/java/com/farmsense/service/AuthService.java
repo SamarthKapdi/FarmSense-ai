@@ -26,7 +26,11 @@ public class AuthService {
         private final PasswordResetTokenRepository resetTokenRepository;
         private final TotpService totpService;
 
-        public AuthResponse register(String fullName, String email, String password) {
+        public AuthResponse register(com.farmsense.model.dto.AuthRequest request) {
+                String email = request.getEmail();
+                String password = request.getPassword();
+                String fullName = request.getFullName();
+                
                 if (userRepository.findByEmail(email).isPresent()) {
                         return AuthResponse.builder()
                                         .message("Email already registered. Please login instead.")
@@ -38,12 +42,33 @@ public class AuthService {
                                         .build();
                 }
 
+                String role = "ROLE_FARMER";
+                if (request.getRole() != null && !request.getRole().isEmpty()) {
+                        String requestedRole = request.getRole().toUpperCase();
+                        if (!requestedRole.startsWith("ROLE_")) {
+                                requestedRole = "ROLE_" + requestedRole;
+                        }
+                        if ("ROLE_ADMIN".equals(requestedRole)) {
+                                return AuthResponse.builder()
+                                                .message("Cannot register as ADMIN.")
+                                                .build();
+                        }
+                        if ("ROLE_AGRONOMIST".equals(requestedRole)) {
+                                if (!"AGRI2026".equals(request.getAgronomistCode())) {
+                                        return AuthResponse.builder()
+                                                        .message("Invalid Agronomist Code.")
+                                                        .build();
+                                }
+                                role = requestedRole;
+                        }
+                }
+
                 User user = User.builder()
                                 .fullName(fullName)
                                 .email(email)
                                 .passwordHash(passwordEncoder.encode(password))
                                 .emailVerified(true)
-                                .role("FARMER")
+                                .role(role)
                                 .build();
 
                 userRepository.save(user);
@@ -207,7 +232,7 @@ public class AuthService {
 
         public String enable2FA(String userId) {
                 User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
-                if (!"ADMIN".equals(user.getRole())) {
+                if (!"ROLE_ADMIN".equals(user.getRole())) {
                         throw new RuntimeException("Only admins can enable 2FA");
                 }
                 String secret = totpService.generateSecretKey();

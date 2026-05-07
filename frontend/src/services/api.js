@@ -39,11 +39,11 @@ export const detectDisease = async (imageFile, crop, language, token) => {
 }
 
 // ── KrishiGPT Chat ──────────────────────────────────────────────────────────
-export const askKrishiGPT = async (question, crop, language, token) => {
+export const askKrishiGPT = async (question, crop, language, token, imageBase64) => {
   const response = await fetch(`${BASE_URL}/farm/ask`, {
     method: 'POST',
     headers: authHeaders(token, 'application/json'),
-    body: JSON.stringify({ question, crop, language }),
+    body: JSON.stringify({ question, crop, language, imageBase64 }),
   })
   return unwrap(response)
 }
