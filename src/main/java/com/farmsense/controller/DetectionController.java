@@ -244,21 +244,35 @@ public class DetectionController {
 
     @GetMapping("/health")
     public ResponseEntity<?> health() {
-        // 1. Ollama check — sanitize URL to prevent double /api
+        // 1. Ollama check — sanitize URL + ngrok header
         boolean ollamaReachable = false;
         String sanitizedUrl = ollamaBaseUrl.replaceAll("/+$", "").replaceAll("/api$", "");
         String checkedEndpoint = sanitizedUrl + "/api/tags";
+        String ollamaError = null;
+
         try {
-            HttpClient client = HttpClient.newHttpClient();
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(10))
+                    .build();
             HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create(checkedEndpoint))
-                    .timeout(Duration.ofSeconds(5))
+                    .timeout(Duration.ofSeconds(60))
+                    .header("ngrok-skip-browser-warning", "true")
+                    .header("User-Agent", "FarmSense-AI/2.0")
                     .GET()
                     .build();
             HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
             ollamaReachable = resp.statusCode() == 200;
+            if (!ollamaReachable) {
+                ollamaError = "HTTP " + resp.statusCode();
+                log.warn("Ollama health check returned HTTP {} for {}", resp.statusCode(), checkedEndpoint);
+            }
+        } catch (HttpTimeoutException e) {
+            ollamaError = "Timeout after 60s";
+            log.warn("Ollama health check TIMEOUT for {}: {}", checkedEndpoint, e.getMessage());
         } catch (Exception e) {
-            log.warn("Ollama health check failed for {}: {}", checkedEndpoint, e.getMessage());
+            ollamaError = e.getClass().getSimpleName() + ": " + e.getMessage();
+            log.warn("Ollama health check FAILED for {}: {}", checkedEndpoint, e.getMessage());
         }
 
         // 2. Database check
@@ -266,7 +280,9 @@ public class DetectionController {
         try {
             reportRepository.count();
             dbReachable = true;
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            log.warn("Database health check failed: {}", e.getMessage());
+        }
 
         // 3. Disk space check
         java.io.File root = new java.io.File(".");
@@ -275,16 +291,104 @@ public class DetectionController {
 
         String overallStatus = (dbReachable && diskOk) ? "UP" : "DEGRADED";
 
-        return ResponseEntity.ok(ApiResponse.ok("FarmSense AI Running", Map.of(
-                "status", overallStatus,
-                "javaVersion", System.getProperty("java.version"),
-                "components", Map.of(
-                        "database", dbReachable ? "UP" : "DOWN",
-                        "ollama", ollamaReachable ? "UP" : "DOWN",
-                        "diskSpace", diskOk ? "UP (" + freeGB + " GB free)" : "LOW (" + freeGB + " GB)"
-                ),
-                "ollamaBaseUrl", ollamaBaseUrl,
-                "chatModel", chatModelName,
-                "visionModel", visionModelName)));
+        java.util.LinkedHashMap<String, Object> components = new java.util.LinkedHashMap<>();
+        components.put("database", dbReachable ? "UP" : "DOWN");
+        components.put("ollama", ollamaReachable ? "UP" : "DOWN" + (ollamaError != null ? " (" + ollamaError + ")" : ""));
+        components.put("diskSpace", diskOk ? "UP (" + freeGB + " GB free)" : "LOW (" + freeGB + " GB)");
+
+        java.util.LinkedHashMap<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("status", overallStatus);
+        result.put("javaVersion", System.getProperty("java.version"));
+        result.put("components", components);
+        result.put("ollamaBaseUrl", sanitizedUrl);
+        result.put("ollamaCheckedEndpoint", checkedEndpoint);
+        result.put("chatModel", chatModelName);
+        result.put("visionModel", visionModelName);
+
+        return ResponseEntity.ok(ApiResponse.ok("FarmSense AI Running", result));
+    }
+
+    /**
+     * GET /api/farm/debug/ollama — Deep Ollama connectivity diagnostic.
+     * Returns full model list, latency, exact URLs, and error details.
+     */
+    @GetMapping("/debug/ollama")
+    public ResponseEntity<?> debugOllama() {
+        String sanitizedUrl = ollamaBaseUrl.replaceAll("/+$", "").replaceAll("/api$", "");
+        String endpoint = sanitizedUrl + "/api/tags";
+        long startTime = System.currentTimeMillis();
+
+        log.info("=== OLLAMA DEBUG PROBE ===");
+        log.info("Raw configured URL: {}", ollamaBaseUrl);
+        log.info("Sanitized URL: {}", sanitizedUrl);
+        log.info("Probe endpoint: {}", endpoint);
+
+        java.util.LinkedHashMap<String, Object> debug = new java.util.LinkedHashMap<>();
+        debug.put("configuredBaseUrl", ollamaBaseUrl);
+        debug.put("sanitizedBaseUrl", sanitizedUrl);
+        debug.put("probeEndpoint", endpoint);
+        debug.put("chatModel", chatModelName);
+        debug.put("visionModel", visionModelName);
+
+        try {
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(10))
+                    .build();
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(endpoint))
+                    .timeout(Duration.ofSeconds(60))
+                    .header("ngrok-skip-browser-warning", "true")
+                    .header("User-Agent", "FarmSense-AI/2.0")
+                    .GET()
+                    .build();
+            HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
+            long latency = System.currentTimeMillis() - startTime;
+
+            debug.put("httpStatus", resp.statusCode());
+            debug.put("latencyMs", latency);
+            debug.put("reachable", resp.statusCode() == 200);
+
+            if (resp.statusCode() == 200) {
+                try {
+                    var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                    var tree = mapper.readTree(resp.body());
+                    var models = tree.get("models");
+                    if (models != null && models.isArray()) {
+                        java.util.List<String> modelNames = new java.util.ArrayList<>();
+                        for (var m : models) {
+                            modelNames.add(m.has("name") ? m.get("name").asText() : "unknown");
+                        }
+                        debug.put("availableModels", modelNames);
+                        debug.put("modelCount", modelNames.size());
+                        debug.put("chatModelAvailable", modelNames.stream()
+                                .anyMatch(n -> n.contains(chatModelName.replace(":latest", ""))));
+                        debug.put("visionModelAvailable", modelNames.stream()
+                                .anyMatch(n -> n.contains(visionModelName.replace(":7b", ""))));
+                    }
+                } catch (Exception e) {
+                    debug.put("parseWarning", "Could not parse model list: " + e.getMessage());
+                    debug.put("rawResponsePreview", resp.body().substring(0, Math.min(500, resp.body().length())));
+                }
+            } else {
+                debug.put("rawResponsePreview", resp.body().substring(0, Math.min(500, resp.body().length())));
+            }
+
+            log.info("Ollama debug probe: status={}, latency={}ms", resp.statusCode(), latency);
+
+        } catch (HttpTimeoutException e) {
+            long latency = System.currentTimeMillis() - startTime;
+            debug.put("reachable", false);
+            debug.put("error", "TIMEOUT after " + latency + "ms");
+            debug.put("latencyMs", latency);
+            log.error("Ollama debug probe TIMEOUT: {}ms", latency);
+        } catch (Exception e) {
+            long latency = System.currentTimeMillis() - startTime;
+            debug.put("reachable", false);
+            debug.put("error", e.getClass().getSimpleName() + ": " + e.getMessage());
+            debug.put("latencyMs", latency);
+            log.error("Ollama debug probe FAILED: {}", e.getMessage(), e);
+        }
+
+        return ResponseEntity.ok(ApiResponse.ok("Ollama Debug Info", debug));
     }
 }

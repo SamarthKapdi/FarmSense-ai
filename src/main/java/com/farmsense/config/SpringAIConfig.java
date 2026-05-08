@@ -18,11 +18,11 @@ import java.time.Duration;
 import java.util.function.Function;
 
 /**
- * Spring AI + Ollama configuration with production-grade timeouts.
+ * Spring AI + Ollama configuration with production-grade timeouts and ngrok compatibility.
  *
- * The default OllamaApi uses a 30-second read timeout which is far too short
- * for vision model inference (llava:7b). We inject a custom RestClient.Builder with
- * 60s connect / 300s read to survive llava:7b cold starts.
+ * KEY FIX: All HTTP calls to Ollama include the "ngrok-skip-browser-warning" header.
+ * Without this, ngrok free tier returns an HTML interstitial page instead of JSON,
+ * causing all API calls to fail silently.
  */
 @Configuration
 @Slf4j
@@ -37,26 +37,37 @@ public class SpringAIConfig {
     @Value("${spring.ai.ollama.vision.model:llava:7b}")
     private String visionModelName;
 
-    // ── Timeout-safe OllamaApi ──────────────────────────────────────────────────
+    // ── Timeout-safe + ngrok-safe OllamaApi ─────────────────────────────────────
 
     @Bean
     public OllamaApi ollamaApi() {
         // Sanitize: strip trailing /api or slashes that would break OllamaApi paths
         String cleanUrl = ollamaBaseUrl.replaceAll("/+$", "").replaceAll("/api$", "");
-        log.info("Initializing OllamaApi → baseUrl={} (raw={}), chatModel={}, visionModel={}",
-                cleanUrl, ollamaBaseUrl, chatModelName, visionModelName);
+
+        log.info("╔══════════════════════════════════════════════════════════╗");
+        log.info("║  OLLAMA CONFIGURATION                                  ║");
+        log.info("║  BASE URL  : {}", cleanUrl);
+        log.info("║  RAW INPUT : {}", ollamaBaseUrl);
+        log.info("║  CHAT MODEL: {}", chatModelName);
+        log.info("║  VISION    : {}", visionModelName);
+        log.info("╚══════════════════════════════════════════════════════════╝");
 
         // RestClient timeout (for non-streaming synchronous calls)
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(Duration.ofSeconds(60));
+        factory.setConnectTimeout(Duration.ofSeconds(10));
         factory.setReadTimeout(Duration.ofSeconds(300)); // 5 minutes — vision models need this
 
         RestClient.Builder restClientBuilder = RestClient.builder()
-                .requestFactory(factory);
+                .requestFactory(factory)
+                // CRITICAL: ngrok free tier blocks requests without this header
+                .defaultHeader("ngrok-skip-browser-warning", "true")
+                .defaultHeader("User-Agent", "FarmSense-AI/2.0");
 
         // WebClient timeout (for streaming calls)
         org.springframework.web.reactive.function.client.WebClient.Builder webClientBuilder =
-                org.springframework.web.reactive.function.client.WebClient.builder();
+                org.springframework.web.reactive.function.client.WebClient.builder()
+                        .defaultHeader("ngrok-skip-browser-warning", "true")
+                        .defaultHeader("User-Agent", "FarmSense-AI/2.0");
 
         return new OllamaApi(cleanUrl, restClientBuilder, webClientBuilder);
     }
