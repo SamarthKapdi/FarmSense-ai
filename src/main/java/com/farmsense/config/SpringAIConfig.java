@@ -41,8 +41,10 @@ public class SpringAIConfig {
 
     @Bean
     public OllamaApi ollamaApi() {
-        log.info("Initializing OllamaApi → baseUrl={}, chatModel={}, visionModel={}",
-                ollamaBaseUrl, chatModelName, visionModelName);
+        // Sanitize: strip trailing /api or slashes that would break OllamaApi paths
+        String cleanUrl = ollamaBaseUrl.replaceAll("/+$", "").replaceAll("/api$", "");
+        log.info("Initializing OllamaApi → baseUrl={} (raw={}), chatModel={}, visionModel={}",
+                cleanUrl, ollamaBaseUrl, chatModelName, visionModelName);
 
         // RestClient timeout (for non-streaming synchronous calls)
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
@@ -56,7 +58,7 @@ public class SpringAIConfig {
         org.springframework.web.reactive.function.client.WebClient.Builder webClientBuilder =
                 org.springframework.web.reactive.function.client.WebClient.builder();
 
-        return new OllamaApi(ollamaBaseUrl, restClientBuilder, webClientBuilder);
+        return new OllamaApi(cleanUrl, restClientBuilder, webClientBuilder);
     }
 
     // ── Chat Memory ─────────────────────────────────────────────────────────────

@@ -244,9 +244,10 @@ public class DetectionController {
 
     @GetMapping("/health")
     public ResponseEntity<?> health() {
-        // 1. Ollama check
+        // 1. Ollama check — sanitize URL to prevent double /api
         boolean ollamaReachable = false;
-        String checkedEndpoint = ollamaBaseUrl + "/api/tags";
+        String sanitizedUrl = ollamaBaseUrl.replaceAll("/+$", "").replaceAll("/api$", "");
+        String checkedEndpoint = sanitizedUrl + "/api/tags";
         try {
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest req = HttpRequest.newBuilder()
@@ -256,7 +257,9 @@ public class DetectionController {
                     .build();
             HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
             ollamaReachable = resp.statusCode() == 200;
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            log.warn("Ollama health check failed for {}: {}", checkedEndpoint, e.getMessage());
+        }
 
         // 2. Database check
         boolean dbReachable = false;
