@@ -1,5 +1,5 @@
 {
-  "app": { "name": "ಫಾರ್ಮ್‌ಸೆನ್ಸ್ AI", "tagline": "AI-ಚಾಲಿತ ಬೆಳೆ ಬುದ್ಧಿಮತ್ತೆ" },
+  "app": { "name": "ಫಾರ್ಮ್‌ಸೆನ್ಸ್ AI", "title": "ಫಾರ್ಮ್‌ಸೆನ್ಸ್ AI", "tagline": "AI-ಚಾಲಿತ ಬೆಳೆ ಬುದ್ಧಿಮತ್ತೆ", "subtitle": "AI-ಚಾಲಿತ ಬೆಳೆ ರೋಗ ಪತ್ತೆ" },
   "nav": { "home": "ಮುಖಪುಟ", "scan": "ಸ್ಕ್ಯಾನ್", "detect": "ಪತ್ತೆ", "chat": "ಚಾಟ್", "weather": "ಹವಾಮಾನ", "market": "ಮಾರುಕಟ್ಟೆ", "activity": "ಚಟುವಟಿಕೆ", "profile": "ಪ್ರೊಫೈಲ್", "calendar": "ಕ್ಯಾಲೆಂಡರ್", "history": "ಇತಿಹಾಸ", "analytics": "ವಿಶ್ಲೇಷಣೆ", "logout": "ಲಾಗೌಟ್", "login": "ಲಾಗಿನ್", "register": "ನೋಂದಣಿ" },
   "upload": { "title": "ಸ್ಕ್ಯಾನ್ ಮಾಡಿ", "tap": "ಅಪ್‌ಲೋಡ್ ಮಾಡಿ", "format": "JPG, PNG • 10MB", "select_crop": "ಬೆಳೆ ಆಯ್ಕೆ", "analyze": "ವಿಶ್ಲೇಷಿಸಿ", "analyzing": "ವಿಶ್ಲೇಷಿಸುತ್ತಿದೆ..." },
   "common": { "loading": "ಲೋಡ್...", "error": "ತಪ್ಪಾಗಿದೆ", "retry": "ಮತ್ತೆ", "save": "ಉಳಿಸು", "cancel": "ರದ್ದು", "more": "ಹೆಚ್ಚು", "search": "ಹುಡುಕು", "no_data": "ಡೇಟಾ ಇಲ್ಲ", "back": "ಹಿಂದೆ" },

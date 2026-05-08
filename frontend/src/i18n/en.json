@@ -1,7 +1,9 @@
 {
   "app": {
     "name": "FarmSense AI",
-    "tagline": "AI-Powered Crop Intelligence"
+    "title": "FarmSense AI",
+    "tagline": "AI-Powered Crop Intelligence",
+    "subtitle": "AI-Powered Crop Disease Detection"
   },
   "nav": {
     "home": "Home",
