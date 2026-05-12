@@ -16,6 +16,7 @@ public class OutbreakAlert {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @org.hibernate.annotations.JdbcTypeCode(java.sql.Types.VARCHAR)
     private String id;
 
     private String disease;

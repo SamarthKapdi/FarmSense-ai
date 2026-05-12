@@ -22,6 +22,7 @@ public class ChatHistory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @org.hibernate.annotations.JdbcTypeCode(java.sql.Types.VARCHAR)
     private String id;
 
     // Keep string userId for backward compat

@@ -12,8 +12,8 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "user_activities", indexes = {
     @Index(name = "idx_activity_user", columnList = "user_id"),
-    @Index(name = "idx_activity_type", columnList = "activityType"),
-    @Index(name = "idx_activity_created", columnList = "createdAt")
+    @Index(name = "idx_activity_type", columnList = "activity_type"),
+    @Index(name = "idx_activity_created", columnList = "created_at")
 })
 @Data
 @Builder
@@ -23,6 +23,7 @@ public class UserActivity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @org.hibernate.annotations.JdbcTypeCode(java.sql.Types.VARCHAR)
     private String id;
 
     @Column(name = "user_id", nullable = false)
