@@ -42,6 +42,11 @@ export const API_BASE_URL = normalizeBaseUrl(
   readRuntimeBaseUrl() || readBuildTimeBaseUrl() || detectProductionBackend() || '/api'
 )
 
+// === TEMPORARY DEBUG — remove after verifying production ===
+console.log('[FarmSense] API_BASE_URL resolved to:', API_BASE_URL)
+console.log('[FarmSense] Source: runtime=', !!readRuntimeBaseUrl(), 'buildTime=', !!readBuildTimeBaseUrl(), 'prodDetect=', !!detectProductionBackend())
+// === END DEBUG ===
+
 export const apiUrl = (path = '') => {
   const suffix = path.startsWith('/') ? path : `/${path}`
   return `${API_BASE_URL}${suffix}`

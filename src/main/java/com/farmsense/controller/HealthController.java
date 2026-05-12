@@ -61,7 +61,7 @@ public class HealthController {
         if (includeAiStack) {
             payload.put("aiStack", Map.of(
                     "vision", "gemini-1.5-flash",
-                    "chat", "llama3-8b-8192"
+                    "chat", "llama-3.1-8b-instant"
             ));
         }
 

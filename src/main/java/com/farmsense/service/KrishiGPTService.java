@@ -28,7 +28,7 @@ public class KrishiGPTService {
     @Value("${GROQ_API_KEY:}")
     private String groqApiKey;
 
-    @Value("${app.ai.groq-model:llama3-8b-8192}")
+    @Value("${app.ai.groq-model:llama-3.1-8b-instant}")
     private String groqModel;
 
     public KrishiGPTService(WebClient.Builder webClientBuilder, ObjectMapper objectMapper) {
@@ -119,8 +119,8 @@ public class KrishiGPTService {
                 "max_tokens", 200
             );
 
-            log.debug("[GROQ] Sending chat request for question: {}... | model={}", 
-                    safeQuestion.length() > 50 ? safeQuestion.substring(0, 50) + "..." : safeQuestion, groqModel);
+            log.info("[GROQ] Sending request → URL: https://api.groq.com/openai/v1/chat/completions | Model: {} | Question: {}...", 
+                    groqModel, safeQuestion.length() > 60 ? safeQuestion.substring(0, 60) + "..." : safeQuestion);
             
             long apiCallStart = System.currentTimeMillis();
             String response = webClient.post()

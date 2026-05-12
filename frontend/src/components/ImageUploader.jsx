@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react'
 import { detectDisease } from '../services/api'
-import { apiUrl } from '../services/baseUrl'
+import { apiUrl, API_BASE_URL } from '../services/baseUrl'
 import { useLanguage } from '../context/LanguageContext'
 
 const CROPS = [
@@ -97,6 +97,15 @@ export default function ImageUploader({ language, farmerId, token, onResult }) {
           selectedImages.length > 1
             ? apiUrl('/farm/detect-batch')
             : apiUrl('/farm/detect')
+
+        // === TEMPORARY DEBUG — remove after verifying production ===
+        console.log('[FarmSense DEBUG] API_BASE_URL:', API_BASE_URL)
+        console.log('[FarmSense DEBUG] Upload endpoint:', endpoint)
+        console.log('[FarmSense DEBUG] Method: POST')
+        console.log('[FarmSense DEBUG] Auth token present:', !!token)
+        console.log('[FarmSense DEBUG] Image count:', selectedImages.length)
+        // === END DEBUG ===
+
         xhr.open('POST', endpoint)
         if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`)
 
