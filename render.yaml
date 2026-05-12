@@ -17,7 +17,13 @@ services:
         generateValue: true
       - key: WEATHER_API_KEY
         sync: false
-      - key: OLLAMA_URL
-        sync: false
       - key: FRONTEND_URL
         sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-1.5-flash
+      - key: GROQ_MODEL
+        value: llama3-8b-8192

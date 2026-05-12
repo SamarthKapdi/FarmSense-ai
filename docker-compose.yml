@@ -10,34 +10,21 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASS:-root}
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - farmsense-pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 10s
       timeout: 5s
       retries: 5
-
-  farmsense-ollama:
-    image: ollama/ollama:latest
-    container_name: farmsense-ollama
-    restart: unless-stopped
-    ports:
-      - "11434:11434"
-    volumes:
-      - farmsense-ollama:/root/.ollama
-    deploy:
-      resources:
-        limits:
-          memory: 4g
 
   farmsense-backend:
     build: .
     container_name: farmsense-backend
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - '8080:8080'
     depends_on:
       farmsense-db:
         condition: service_healthy
@@ -48,12 +35,13 @@ services:
       DB_PASS: ${DB_PASS:-root}
       JWT_SECRET: ${JWT_SECRET:-FarmSenseAI2026ProdSecretKeyMustBeAtLeast64CharsLongForHS256!!}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-604800000}
-      OLLAMA_URL: http://farmsense-ollama:11434
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-1.5-flash}
+      GROQ_MODEL: ${GROQ_MODEL:-llama3-8b-8192}
       WEATHER_API_KEY: ${WEATHER_API_KEY:-demo}
       LIBRETRANSLATE_URL: ${LIBRETRANSLATE_URL:-http://localhost:5000/translate}
 
 volumes:
   farmsense-pgdata:
-    driver: local
-  farmsense-ollama:
     driver: local
