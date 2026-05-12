@@ -71,7 +71,15 @@ public class AuthService {
                                 .role(role)
                                 .build();
 
-                userRepository.save(user);
+                try {
+                        userRepository.save(user);
+                        log.info("New user registered successfully in DB: {}", email);
+                } catch (Exception e) {
+                        log.error("Database save failed during registration for {}: {}", email, e.getMessage(), e);
+                        return AuthResponse.builder()
+                                        .message("Database save failed. Please try again.")
+                                        .build();
+                }
                 log.info("New user registered: {}", email);
 
                 String token = jwtService.generateToken(user);
@@ -116,8 +124,15 @@ public class AuthService {
                                         .build();
                 }
 
-                user.setLastLoginAt(LocalDateTime.now());
-                userRepository.save(user);
+                try {
+                        user.setLastLoginAt(LocalDateTime.now());
+                        userRepository.save(user);
+                } catch (Exception e) {
+                        log.error("Database save failed during login for {}: {}", email, e.getMessage(), e);
+                        return AuthResponse.builder()
+                                        .message("Database save failed during login.")
+                                        .build();
+                }
 
                 String token = jwtService.generateToken(user);
                 String refreshToken = jwtService.generateRefreshToken(user);
