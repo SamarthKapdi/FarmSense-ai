@@ -1,3 +1,5 @@
+const PROD_BACKEND_URL = 'https://farmsense-ai-backend.onrender.com/api'
+
 const normalizeBaseUrl = (value) => {
   if (!value) return ''
   return value.trim().replace(/\/+$/, '')
@@ -26,8 +28,18 @@ const readBuildTimeBaseUrl = () => {
   )
 }
 
+const detectProductionBackend = () => {
+  if (typeof window !== 'undefined' && window.location) {
+    const host = window.location.hostname
+    if (host.includes('vercel.app') || host.includes('farmsense')) {
+      return PROD_BACKEND_URL
+    }
+  }
+  return ''
+}
+
 export const API_BASE_URL = normalizeBaseUrl(
-  readRuntimeBaseUrl() || readBuildTimeBaseUrl() || '/api'
+  readRuntimeBaseUrl() || readBuildTimeBaseUrl() || detectProductionBackend() || '/api'
 )
 
 export const apiUrl = (path = '') => {
