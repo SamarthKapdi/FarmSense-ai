@@ -32,7 +32,9 @@ export const registerUser = async (
     body: JSON.stringify({ fullName, email, password, role, agronomistCode }),
   })
   const json = await safeJson(response)
-  if (!response.ok) throw new Error(json.message || 'Registration failed')
+  if (!response.ok) {
+    return { message: json.message || 'Registration failed' }
+  }
   return unwrap(json)
 }
 
@@ -43,9 +45,10 @@ export const loginWithPassword = async (email, password) => {
     body: JSON.stringify({ email, password }),
   })
   const json = await safeJson(response)
-  // Support 401 but might be a valid error response
-  if (!response.ok && response.status !== 401)
-    throw new Error(json.message || 'Login failed')
+  if (!response.ok) {
+    // Return the error response so the caller can show the backend message
+    return { message: json.message || 'Login failed' }
+  }
   return unwrap(json)
 }
 

@@ -54,10 +54,13 @@ public class GlobalExceptionHandler {
             String field = ((FieldError) error).getField();
             errors.put(field, error.getDefaultMessage());
         });
+        // Use the first specific validation error as the message for the frontend
+        String firstError = errors.values().stream().findFirst().orElse("Validation failed");
+        log.warn("[VALIDATION] Fields: {}", errors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.<Map<String, String>>builder()
                         .success(false)
-                        .message("Validation failed")
+                        .message(firstError)
                         .data(errors)
                         .build());
     }

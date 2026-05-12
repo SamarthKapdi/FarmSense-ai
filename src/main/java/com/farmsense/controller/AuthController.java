@@ -23,11 +23,14 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody AuthRequest request) {
+        log.warn("[AUTH] Register attempt — email={}, fullName={}", request.getEmail(), request.getFullName());
         AuthResponse response = authService.register(request);
         if (response.getToken() != null) {
+            log.warn("[AUTH] Register SUCCESS — email={}", request.getEmail());
             return ResponseEntity.ok(ApiResponse.ok("Registration successful", response));
         }
         String msg = response.getMessage();
+        log.warn("[AUTH] Register FAILED — email={}, reason={}", request.getEmail(), msg);
         if (msg != null && msg.contains("already registered")) {
             return ResponseEntity.status(409).body(ApiResponse.error(msg));
         }
@@ -36,10 +39,13 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody AuthRequest request) {
+        log.warn("[AUTH] Login attempt — email={}", request.getEmail());
         AuthResponse response = authService.login(request.getEmail(), request.getPassword());
         if (response.getToken() != null) {
+            log.warn("[AUTH] Login SUCCESS — email={}", request.getEmail());
             return ResponseEntity.ok(ApiResponse.ok("Login successful", response));
         }
+        log.warn("[AUTH] Login FAILED — email={}, reason={}", request.getEmail(), response.getMessage());
         return ResponseEntity.badRequest().body(ApiResponse.error(response.getMessage()));
     }
 
