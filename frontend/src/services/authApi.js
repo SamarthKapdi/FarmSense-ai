@@ -1,5 +1,4 @@
-const BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api'
+import { apiUrl } from './baseUrl'
 
 /**
  * Unwraps the ApiResponse wrapper: { success, message, data } → data
@@ -11,8 +10,14 @@ const unwrap = (json) => {
   return json
 }
 
-export const registerUser = async (fullName, email, password, role = "FARMER", agronomistCode = "") => {
-  const response = await fetch(`${BASE_URL}/auth/register`, {
+export const registerUser = async (
+  fullName,
+  email,
+  password,
+  role = 'FARMER',
+  agronomistCode = ''
+) => {
+  const response = await fetch(apiUrl('/auth/register'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ fullName, email, password, role, agronomistCode }),
@@ -23,7 +28,7 @@ export const registerUser = async (fullName, email, password, role = "FARMER", a
 }
 
 export const loginWithPassword = async (email, password) => {
-  const response = await fetch(`${BASE_URL}/auth/login`, {
+  const response = await fetch(apiUrl('/auth/login'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
@@ -36,7 +41,7 @@ export const loginWithPassword = async (email, password) => {
 }
 
 export const verify2FA = async (userId, code) => {
-  const response = await fetch(`${BASE_URL}/auth/verify-2fa`, {
+  const response = await fetch(apiUrl('/auth/verify-2fa'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId, code }),
@@ -47,7 +52,7 @@ export const verify2FA = async (userId, code) => {
 }
 
 export const getCurrentUser = async (token) => {
-  const response = await fetch(`${BASE_URL}/auth/me`, {
+  const response = await fetch(apiUrl('/auth/me'), {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!response.ok) throw new Error('Not authenticated')
@@ -56,7 +61,7 @@ export const getCurrentUser = async (token) => {
 }
 
 export const refreshAccessToken = async (refreshToken) => {
-  const response = await fetch(`${BASE_URL}/auth/refresh`, {
+  const response = await fetch(apiUrl('/auth/refresh'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refreshToken }),
@@ -67,7 +72,7 @@ export const refreshAccessToken = async (refreshToken) => {
 }
 
 export const forgotPassword = async (email) => {
-  const response = await fetch(`${BASE_URL}/auth/forgot-password`, {
+  const response = await fetch(apiUrl('/auth/forgot-password'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
@@ -76,7 +81,7 @@ export const forgotPassword = async (email) => {
 }
 
 export const resetPassword = async (email, code, newPassword) => {
-  const response = await fetch(`${BASE_URL}/auth/reset-password`, {
+  const response = await fetch(apiUrl('/auth/reset-password'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, code, newPassword }),

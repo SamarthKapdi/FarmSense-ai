@@ -1,66 +1,43 @@
-const BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api'
+import { apiUrl } from './baseUrl'
 
-const authHeaders = (token) => {
-  const headers = {
-    'Content-Type': 'application/json',
+const authHeaders = (token) => ({
+  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+})
+
+const unwrap = async (response) => {
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}))
+    throw new Error(
+      body.message || body.error || `Request failed (${response.status})`
+    )
   }
-  if (token) {
-    headers.Authorization = `Bearer ${token}`
-  }
-  return headers
+
+  const json = await response.json()
+  return json.data !== undefined ? json.data : json
 }
 
 export const getUserStats = async (token) => {
-  const response = await fetch(`${BASE_URL}/user/stats`, {
-    headers: authHeaders(token),
-  })
-  if (!response.ok) throw new Error('Failed to fetch stats')
-  const body = await response.json()
-  return body.data ?? body
-}
-
-export const getUserActivities = async (token, page = 0) => {
-  const response = await fetch(`${BASE_URL}/user/activities?page=${page}`, {
-    headers: authHeaders(token),
-  })
-  if (!response.ok) throw new Error('Failed to fetch activities')
-  const body = await response.json()
-  return body.data ?? body
+  return unwrap(
+    await fetch(apiUrl('/user/stats'), { headers: authHeaders(token) })
+  )
 }
 
 export const getRecentActivities = async (token) => {
-  const response = await fetch(`${BASE_URL}/user/activities/recent`, {
-    headers: authHeaders(token),
-  })
-  if (!response.ok) throw new Error('Failed to fetch recent activities')
-  const body = await response.json()
-  return body.data ?? body
-}
-
-export const getChatHistory = async (token) => {
-  const response = await fetch(`${BASE_URL}/user/chat-history`, {
-    headers: authHeaders(token),
-  })
-  if (!response.ok) throw new Error('Failed to fetch chat history')
-  const body = await response.json()
-  return body.data ?? body
+  return unwrap(
+    await fetch(apiUrl('/user/activities/recent'), {
+      headers: authHeaders(token),
+    })
+  )
 }
 
 export const getScanHistory = async (token) => {
-  const response = await fetch(`${BASE_URL}/user/scan-history`, {
-    headers: authHeaders(token),
-  })
-  if (!response.ok) throw new Error('Failed to fetch scan history')
-  const body = await response.json()
-  return body.data ?? body
+  return unwrap(
+    await fetch(apiUrl('/user/scan-history'), { headers: authHeaders(token) })
+  )
 }
 
-export const getUserProfile = async (token) => {
-  const response = await fetch(`${BASE_URL}/user/profile`, {
-    headers: authHeaders(token),
-  })
-  if (!response.ok) throw new Error('Failed to fetch profile')
-  const body = await response.json()
-  return body.data ?? body
+export const getChatHistory = async (token) => {
+  return unwrap(
+    await fetch(apiUrl('/user/chat-history'), { headers: authHeaders(token) })
+  )
 }

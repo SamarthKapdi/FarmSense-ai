@@ -1,5 +1,4 @@
-const BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api'
+import { apiUrl } from './baseUrl'
 
 // ── Helper: build auth headers ───────────────────────────────────────────────
 const authHeaders = (token, contentType) => {
@@ -30,7 +29,7 @@ export const detectDisease = async (imageFile, crop, language, token) => {
   formData.append('crop', crop)
   formData.append('language', language)
 
-  const response = await fetch(`${BASE_URL}/farm/detect`, {
+  const response = await fetch(apiUrl('/farm/detect'), {
     method: 'POST',
     headers: authHeaders(token),
     body: formData,
@@ -39,8 +38,14 @@ export const detectDisease = async (imageFile, crop, language, token) => {
 }
 
 // ── KrishiGPT Chat ──────────────────────────────────────────────────────────
-export const askKrishiGPT = async (question, crop, language, token, imageBase64) => {
-  const response = await fetch(`${BASE_URL}/farm/ask`, {
+export const askKrishiGPT = async (
+  question,
+  crop,
+  language,
+  token,
+  imageBase64
+) => {
+  const response = await fetch(apiUrl('/farm/ask'), {
     method: 'POST',
     headers: authHeaders(token, 'application/json'),
     body: JSON.stringify({ question, crop, language, imageBase64 }),
@@ -50,7 +55,7 @@ export const askKrishiGPT = async (question, crop, language, token, imageBase64)
 
 // ── Treatment Plan ───────────────────────────────────────────────────────────
 export const generatePlan = async (detectionResult, language, token) => {
-  const response = await fetch(`${BASE_URL}/farm/treatment-plan`, {
+  const response = await fetch(apiUrl('/farm/treatment-plan'), {
     method: 'POST',
     headers: authHeaders(token, 'application/json'),
     body: JSON.stringify({ detectionResult, language }),
@@ -60,14 +65,14 @@ export const generatePlan = async (detectionResult, language, token) => {
 
 // ── History & Stats ──────────────────────────────────────────────────────────
 export const getHistory = async (token) => {
-  const response = await fetch(`${BASE_URL}/farm/history/me`, {
+  const response = await fetch(apiUrl('/farm/history/me'), {
     headers: authHeaders(token),
   })
   return unwrap(response)
 }
 
 export const getStats = async (token) => {
-  const response = await fetch(`${BASE_URL}/farm/stats/me`, {
+  const response = await fetch(apiUrl('/farm/stats/me'), {
     headers: authHeaders(token),
   })
   return unwrap(response)
@@ -77,7 +82,7 @@ export const getStats = async (token) => {
 export const getWeather = async (city = 'Mumbai') => {
   try {
     const response = await fetch(
-      `${BASE_URL}/weather?city=${encodeURIComponent(city)}`
+      apiUrl(`/weather?city=${encodeURIComponent(city)}`)
     )
     return unwrap(response)
   } catch (e) {
@@ -96,14 +101,14 @@ export const getWeather = async (city = 'Mumbai') => {
 
 // ── Farm Profile CRUD ────────────────────────────────────────────────────────
 export const getFarmProfiles = async (token) => {
-  const response = await fetch(`${BASE_URL}/farm-profile`, {
+  const response = await fetch(apiUrl('/farm-profile'), {
     headers: authHeaders(token),
   })
   return unwrap(response)
 }
 
 export const createFarmProfile = async (profile, token) => {
-  const response = await fetch(`${BASE_URL}/farm-profile`, {
+  const response = await fetch(apiUrl('/farm-profile'), {
     method: 'POST',
     headers: authHeaders(token, 'application/json'),
     body: JSON.stringify(profile),
@@ -112,7 +117,7 @@ export const createFarmProfile = async (profile, token) => {
 }
 
 export const updateFarmProfile = async (id, profile, token) => {
-  const response = await fetch(`${BASE_URL}/farm-profile/${id}`, {
+  const response = await fetch(apiUrl(`/farm-profile/${id}`), {
     method: 'PUT',
     headers: authHeaders(token, 'application/json'),
     body: JSON.stringify(profile),
@@ -121,7 +126,7 @@ export const updateFarmProfile = async (id, profile, token) => {
 }
 
 export const deleteFarmProfile = async (id, token) => {
-  const response = await fetch(`${BASE_URL}/farm-profile/${id}`, {
+  const response = await fetch(apiUrl(`/farm-profile/${id}`), {
     method: 'DELETE',
     headers: authHeaders(token),
   })
@@ -131,7 +136,7 @@ export const deleteFarmProfile = async (id, token) => {
 // ── Health Check ─────────────────────────────────────────────────────────────
 export const checkHealth = async () => {
   try {
-    const response = await fetch(`${BASE_URL}/farm/health`)
+    const response = await fetch(apiUrl('/farm/health'))
     return response.ok
   } catch {
     return false
@@ -140,7 +145,7 @@ export const checkHealth = async () => {
 
 // ── Bookmarks ────────────────────────────────────────────────────────────────
 export const toggleBookmark = async (reportId, token) => {
-  const response = await fetch(`${BASE_URL}/farm/history/${reportId}/bookmark`, {
+  const response = await fetch(apiUrl(`/farm/history/${reportId}/bookmark`), {
     method: 'PATCH',
     headers: authHeaders(token),
   })
@@ -148,7 +153,7 @@ export const toggleBookmark = async (reportId, token) => {
 }
 
 export const getBookmarkedHistory = async (token) => {
-  const response = await fetch(`${BASE_URL}/farm/history/bookmarked`, {
+  const response = await fetch(apiUrl('/farm/history/bookmarked'), {
     headers: authHeaders(token),
   })
   return unwrap(response)
@@ -156,7 +161,7 @@ export const getBookmarkedHistory = async (token) => {
 
 // ── PDF Export ────────────────────────────────────────────────────────────────
 export const downloadReportPdf = async (reportId, token) => {
-  const response = await fetch(`${BASE_URL}/farm/report/${reportId}/pdf`, {
+  const response = await fetch(apiUrl(`/farm/report/${reportId}/pdf`), {
     headers: authHeaders(token),
   })
   if (!response.ok) throw new Error('Failed to download report')
