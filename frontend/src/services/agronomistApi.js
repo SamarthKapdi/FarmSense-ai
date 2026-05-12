@@ -1,4 +1,4 @@
-import { apiUrl } from './baseUrl'
+import { apiUrl, safeJson } from './baseUrl'
 const BASE_URL = apiUrl('/agronomist')
 
 const getAuthHeaders = () => {
@@ -10,7 +10,7 @@ export const getDiseaseTrends = async () => {
   const response = await fetch(`${BASE_URL}/disease-trends`, {
     headers: getAuthHeaders(),
   })
-  const data = await response.json()
+  const data = await safeJson(response)
   if (!response.ok)
     throw new Error(data.message || 'Failed to fetch disease trends')
   return data.data
@@ -20,7 +20,7 @@ export const getPendingVerifications = async () => {
   const response = await fetch(`${BASE_URL}/pending-verifications`, {
     headers: getAuthHeaders(),
   })
-  const data = await response.json()
+  const data = await safeJson(response)
   if (!response.ok)
     throw new Error(data.message || 'Failed to fetch pending verifications')
   return data.data
@@ -35,7 +35,7 @@ export const verifyDiagnosis = async (reportId, correctDisease, notes) => {
     },
     body: JSON.stringify({ correctDisease, notes }),
   })
-  const data = await response.json()
+  const data = await safeJson(response)
   if (!response.ok)
     throw new Error(data.message || 'Failed to verify diagnosis')
   return data.data
@@ -50,7 +50,7 @@ export const publishAdvisory = async (advisory) => {
     },
     body: JSON.stringify(advisory),
   })
-  const data = await response.json()
+  const data = await safeJson(response)
   if (!response.ok)
     throw new Error(data.message || 'Failed to publish advisory')
   return data.data
@@ -60,7 +60,7 @@ export const getAdvisories = async () => {
   const response = await fetch(`${BASE_URL}/advisories`, {
     headers: getAuthHeaders(),
   })
-  const data = await response.json()
+  const data = await safeJson(response)
   if (!response.ok)
     throw new Error(data.message || 'Failed to fetch advisories')
   return data.data

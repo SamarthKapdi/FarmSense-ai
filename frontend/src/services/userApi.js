@@ -5,14 +5,20 @@ const authHeaders = (token) => ({
 })
 
 const unwrap = async (response) => {
+  const text = await response.text();
+  let json = {};
+  try {
+    json = text ? JSON.parse(text) : {};
+  } catch (e) {
+    json = { message: 'Invalid response from server' };
+  }
+
   if (!response.ok) {
-    const body = await response.json().catch(() => ({}))
     throw new Error(
-      body.message || body.error || `Request failed (${response.status})`
+      json.message || json.error || `Request failed (${response.status})`
     )
   }
 
-  const json = await response.json()
   return json.data !== undefined ? json.data : json
 }
 

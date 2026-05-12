@@ -1,4 +1,4 @@
-import { apiUrl } from './baseUrl'
+import { apiUrl, safeJson } from './baseUrl'
 
 const headers = (token) => ({
   'Content-Type': 'application/json',
@@ -8,7 +8,7 @@ const headers = (token) => ({
 export async function getNotifications(token) {
   const res = await fetch(apiUrl('/notifications'), { headers: headers(token) })
   if (!res.ok) return []
-  const json = await res.json()
+  const json = await safeJson(res)
   return json.data || []
 }
 
@@ -17,7 +17,7 @@ export async function getUnreadNotifications(token) {
     headers: headers(token),
   })
   if (!res.ok) return { count: 0, notifications: [] }
-  const json = await res.json()
+  const json = await safeJson(res)
   return json.data || { count: 0, notifications: [] }
 }
 

@@ -34,3 +34,12 @@ export const apiUrl = (path = '') => {
   const suffix = path.startsWith('/') ? path : `/${path}`
   return `${API_BASE_URL}${suffix}`
 }
+
+export const safeJson = async (response) => {
+  const text = await response.text();
+  try {
+    return text ? JSON.parse(text) : {};
+  } catch (e) {
+    return { message: 'Invalid response from server' };
+  }
+}

@@ -10,6 +10,15 @@ const unwrap = (json) => {
   return json
 }
 
+const safeJson = async (response) => {
+  const text = await response.text();
+  try {
+    return text ? JSON.parse(text) : {};
+  } catch (e) {
+    return { message: 'Invalid response from server' };
+  }
+}
+
 export const registerUser = async (
   fullName,
   email,
@@ -22,7 +31,7 @@ export const registerUser = async (
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ fullName, email, password, role, agronomistCode }),
   })
-  const json = await response.json()
+  const json = await safeJson(response)
   if (!response.ok) throw new Error(json.message || 'Registration failed')
   return unwrap(json)
 }
@@ -33,7 +42,7 @@ export const loginWithPassword = async (email, password) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   })
-  const json = await response.json()
+  const json = await safeJson(response)
   // Support 401 but might be a valid error response
   if (!response.ok && response.status !== 401)
     throw new Error(json.message || 'Login failed')
@@ -46,7 +55,7 @@ export const verify2FA = async (userId, code) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId, code }),
   })
-  const json = await response.json()
+  const json = await safeJson(response)
   if (!response.ok) throw new Error(json.message || '2FA verification failed')
   return unwrap(json)
 }
@@ -56,7 +65,7 @@ export const getCurrentUser = async (token) => {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!response.ok) throw new Error('Not authenticated')
-  const json = await response.json()
+  const json = await safeJson(response)
   return unwrap(json)
 }
 
@@ -66,7 +75,7 @@ export const refreshAccessToken = async (refreshToken) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refreshToken }),
   })
-  const json = await response.json()
+  const json = await safeJson(response)
   if (!response.ok) throw new Error(json.message || 'Token refresh failed')
   return unwrap(json)
 }
@@ -77,7 +86,7 @@ export const forgotPassword = async (email) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
   })
-  return response.json()
+  return safeJson(response)
 }
 
 export const resetPassword = async (email, code, newPassword) => {
@@ -86,5 +95,5 @@ export const resetPassword = async (email, code, newPassword) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, code, newPassword }),
   })
-  return response.json()
+  return safeJson(response)
 }

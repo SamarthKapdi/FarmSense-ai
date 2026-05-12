@@ -1,17 +1,17 @@
-import { apiUrl } from './baseUrl'
+import { apiUrl, safeJson } from './baseUrl'
 const BASE_URL = apiUrl('/weather')
 
 export const getCurrentWeather = async (lat, lon) => {
   const response = await fetch(`${BASE_URL}/current?lat=${lat}&lon=${lon}`)
   if (!response.ok) throw new Error('Failed to fetch current weather')
-  const json = await response.json()
+  const json = await safeJson(response)
   return json.data
 }
 
 export const getHourlyForecast = async (lat, lon) => {
   const response = await fetch(`${BASE_URL}/hourly?lat=${lat}&lon=${lon}`)
   if (!response.ok) throw new Error('Failed to fetch hourly forecast')
-  const json = await response.json()
+  const json = await safeJson(response)
   return json.data
 }
 
@@ -20,14 +20,14 @@ export const getDailyForecast = async (lat, lon, days = 10) => {
     `${BASE_URL}/daily?lat=${lat}&lon=${lon}&days=${days}`
   )
   if (!response.ok) throw new Error('Failed to fetch daily forecast')
-  const json = await response.json()
+  const json = await safeJson(response)
   return json.data
 }
 
 export const getAirQuality = async (lat, lon) => {
   const response = await fetch(`${BASE_URL}/airquality?lat=${lat}&lon=${lon}`)
   if (!response.ok) throw new Error('Failed to fetch air quality data')
-  const json = await response.json()
+  const json = await safeJson(response)
   return json.data
 }
 
@@ -37,7 +37,7 @@ export const searchCity = async (name) => {
     `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=10&language=en&format=json`
   )
   if (!response.ok) throw new Error('Failed to search city')
-  const json = await response.json()
+  const json = await safeJson(response)
   return json.results || []
 }
 
@@ -51,7 +51,7 @@ export const reverseGeocode = async (lat, lon) => {
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`
     )
     if (!response.ok) return { name: 'Current Location' }
-    const data = await response.json()
+    const data = await safeJson(response)
     return {
       name:
         data.address.city ||

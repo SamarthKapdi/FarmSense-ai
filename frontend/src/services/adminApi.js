@@ -1,4 +1,4 @@
-import { apiUrl } from './baseUrl'
+import { apiUrl, safeJson } from './baseUrl'
 const BASE_URL = apiUrl('/admin')
 const getAuthHeaders = () => {
   const token = localStorage.getItem('farmsense_token')
@@ -11,21 +11,21 @@ const getAuthHeaders = () => {
 export const getAllUsers = async () => {
   const res = await fetch(`${BASE_URL}/users`, { headers: getAuthHeaders() })
   if (!res.ok) throw new Error('Failed to fetch users')
-  const json = await res.json()
+  const json = await safeJson(res)
   return json.data
 }
 
 export const getSystemStats = async () => {
   const res = await fetch(`${BASE_URL}/stats`, { headers: getAuthHeaders() })
   if (!res.ok) throw new Error('Failed to fetch stats')
-  const json = await res.json()
+  const json = await safeJson(res)
   return json.data
 }
 
 export const getSystemHealth = async () => {
   const res = await fetch(`${BASE_URL}/health`, { headers: getAuthHeaders() })
   if (!res.ok) throw new Error('Failed to fetch system health')
-  const json = await res.json()
+  const json = await safeJson(res)
   return json.data
 }
 
@@ -34,7 +34,7 @@ export const getRecentActivities = async (limit = 20) => {
     headers: getAuthHeaders(),
   })
   if (!res.ok) throw new Error('Failed to fetch activities')
-  const json = await res.json()
+  const json = await safeJson(res)
   return json.data
 }
 
@@ -45,7 +45,7 @@ export const updateConfig = async (key, value) => {
     body: JSON.stringify({ configKey: key, configValue: value }),
   })
   if (!res.ok) throw new Error('Failed to update config')
-  const json = await res.json()
+  const json = await safeJson(res)
   return json.data
 }
 
