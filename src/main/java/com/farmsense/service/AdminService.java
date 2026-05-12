@@ -16,6 +16,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +32,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 public class AdminService {
+
+    private static final Instant START_TIME = Instant.now();
 
     private final UserRepository userRepository;
     private final ReportRepository reportRepository;
@@ -83,8 +93,11 @@ public class AdminService {
         return activityRepository.findAll(PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createdAt"))).getContent();
     }
 
-    @org.springframework.beans.factory.annotation.Value("${spring.ai.ollama.base-url:http://localhost:11434}")
-    private String ollamaBaseUrl;
+    @org.springframework.beans.factory.annotation.Value("${GEMINI_API_KEY:}")
+    private String geminiApiKey;
+
+    @org.springframework.beans.factory.annotation.Value("${GROQ_API_KEY:}")
+    private String groqApiKey;
 
     public Map<String, Object> getHealthStatus() {
         Map<String, Object> health = new HashMap<>();
@@ -97,14 +110,42 @@ public class AdminService {
             health.put("database", "DOWN");
         }
 
-        // Ollama check
+        // Gemini check
         try {
-            String ollamaUrl = ollamaBaseUrl + "/api/tags";
-            webClientBuilder.build().get().uri(ollamaUrl).retrieve().toBodilessEntity().block();
-            health.put("ollama", "UP");
+            HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create("https://generativelanguage.googleapis.com/v1beta/models?key=" + geminiApiKey))
+                    .timeout(Duration.ofSeconds(30))
+                    .GET()
+                    .build();
+            HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
+            health.put("gemini", resp.statusCode() == 200 ? "UP" : "DOWN");
+        } catch (HttpTimeoutException e) {
+            health.put("gemini", "TIMEOUT");
         } catch (Exception e) {
-            health.put("ollama", "DOWN");
+            health.put("gemini", "DOWN");
         }
+
+        // Groq check
+        try {
+            HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.groq.com/openai/v1/models"))
+                    .timeout(Duration.ofSeconds(30))
+                    .header("Authorization", "Bearer " + groqApiKey)
+                    .GET()
+                    .build();
+            HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
+            health.put("groq", resp.statusCode() == 200 ? "UP" : "DOWN");
+        } catch (HttpTimeoutException e) {
+            health.put("groq", "TIMEOUT");
+        } catch (Exception e) {
+            health.put("groq", "DOWN");
+        }
+
+        Duration uptime = Duration.between(START_TIME, Instant.now());
+        health.put("uptimeSeconds", uptime.toSeconds());
+        health.put("uptimeHuman", String.format("%dh %02dm %02ds", uptime.toHours(), uptime.toMinutesPart(), uptime.toSecondsPart()));
 
         health.put("timestamp", LocalDateTime.now());
         return health;
