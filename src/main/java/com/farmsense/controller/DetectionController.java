@@ -42,9 +42,6 @@ public class DetectionController {
     private final ReportRepository reportRepository;
     private final PdfReportService pdfReportService;
 
-    @Value("${spring.ai.ollama.base-url:http://localhost:11434}")
-    private String ollamaBaseUrl;
-
     /**
     * POST /api/farm/detect — Upload image for AI disease detection.
      */
@@ -236,46 +233,71 @@ public class DetectionController {
         return ResponseEntity.ok(ApiResponse.ok(reportService.getStats(effectiveId)));
     }
 
-    @Value("${spring.ai.ollama.vision.model:llava:7b}")
-    private String visionModelName;
+    @Value("${GEMINI_API_KEY:}")
+    private String geminiApiKey;
 
-    @Value("${spring.ai.ollama.chat.model:llama3:latest}")
-    private String chatModelName;
+    @Value("${GROQ_API_KEY:}")
+    private String groqApiKey;
 
     @GetMapping("/health")
     public ResponseEntity<?> health() {
-        // 1. Ollama check — sanitize URL + ngrok header
-        boolean ollamaReachable = false;
-        String sanitizedUrl = ollamaBaseUrl.replaceAll("/+$", "").replaceAll("/api$", "");
-        String checkedEndpoint = sanitizedUrl + "/api/tags";
-        String ollamaError = null;
+        // 1. Gemini API check
+        boolean geminiReachable = false;
+        String geminiError = null;
 
         try {
             HttpClient client = HttpClient.newBuilder()
                     .connectTimeout(Duration.ofSeconds(10))
                     .build();
             HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create(checkedEndpoint))
-                    .timeout(Duration.ofSeconds(60))
-                    .header("ngrok-skip-browser-warning", "true")
+                    .uri(URI.create("https://generativelanguage.googleapis.com/v1beta/models?key=" + geminiApiKey))
+                    .timeout(Duration.ofSeconds(30))
                     .header("User-Agent", "FarmSense-AI/2.0")
                     .GET()
                     .build();
             HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
-            ollamaReachable = resp.statusCode() == 200;
-            if (!ollamaReachable) {
-                ollamaError = "HTTP " + resp.statusCode();
-                log.warn("Ollama health check returned HTTP {} for {}", resp.statusCode(), checkedEndpoint);
+            geminiReachable = resp.statusCode() == 200;
+            if (!geminiReachable) {
+                geminiError = "HTTP " + resp.statusCode();
+                log.warn("Gemini health check returned HTTP {}", resp.statusCode());
             }
         } catch (HttpTimeoutException e) {
-            ollamaError = "Timeout after 60s";
-            log.warn("Ollama health check TIMEOUT for {}: {}", checkedEndpoint, e.getMessage());
+            geminiError = "Timeout after 30s";
+            log.warn("Gemini health check TIMEOUT: {}", e.getMessage());
         } catch (Exception e) {
-            ollamaError = e.getClass().getSimpleName() + ": " + e.getMessage();
-            log.warn("Ollama health check FAILED for {}: {}", checkedEndpoint, e.getMessage());
+            geminiError = e.getClass().getSimpleName() + ": " + e.getMessage();
+            log.warn("Gemini health check FAILED: {}", e.getMessage());
         }
 
-        // 2. Database check
+        // 2. Groq API check
+        boolean groqReachable = false;
+        String groqError = null;
+        try {
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(10))
+                    .build();
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.groq.com/openai/v1/models"))
+                    .timeout(Duration.ofSeconds(30))
+                    .header("Authorization", "Bearer " + groqApiKey)
+                    .header("User-Agent", "FarmSense-AI/2.0")
+                    .GET()
+                    .build();
+            HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
+            groqReachable = resp.statusCode() == 200;
+            if (!groqReachable) {
+                groqError = "HTTP " + resp.statusCode();
+                log.warn("Groq health check returned HTTP {}", resp.statusCode());
+            }
+        } catch (HttpTimeoutException e) {
+            groqError = "Timeout after 30s";
+            log.warn("Groq health check TIMEOUT: {}", e.getMessage());
+        } catch (Exception e) {
+            groqError = e.getClass().getSimpleName() + ": " + e.getMessage();
+            log.warn("Groq health check FAILED: {}", e.getMessage());
+        }
+
+        // 3. Database check
         boolean dbReachable = false;
         try {
             reportRepository.count();
@@ -284,111 +306,88 @@ public class DetectionController {
             log.warn("Database health check failed: {}", e.getMessage());
         }
 
-        // 3. Disk space check
+        // 4. Disk space check
         java.io.File root = new java.io.File(".");
         long freeGB = root.getFreeSpace() / (1024 * 1024 * 1024);
         boolean diskOk = freeGB > 1;
 
-        String overallStatus = (dbReachable && diskOk) ? "UP" : "DEGRADED";
+        String overallStatus = (dbReachable && diskOk && geminiReachable && groqReachable) ? "UP" : "DEGRADED";
 
         java.util.LinkedHashMap<String, Object> components = new java.util.LinkedHashMap<>();
         components.put("database", dbReachable ? "UP" : "DOWN");
-        components.put("ollama", ollamaReachable ? "UP" : "DOWN" + (ollamaError != null ? " (" + ollamaError + ")" : ""));
+        components.put("gemini", geminiReachable ? "UP" : "DOWN" + (geminiError != null ? " (" + geminiError + ")" : ""));
+        components.put("groq", groqReachable ? "UP" : "DOWN" + (groqError != null ? " (" + groqError + ")" : ""));
         components.put("diskSpace", diskOk ? "UP (" + freeGB + " GB free)" : "LOW (" + freeGB + " GB)");
 
         java.util.LinkedHashMap<String, Object> result = new java.util.LinkedHashMap<>();
         result.put("status", overallStatus);
         result.put("javaVersion", System.getProperty("java.version"));
         result.put("components", components);
-        result.put("ollamaBaseUrl", sanitizedUrl);
-        result.put("ollamaCheckedEndpoint", checkedEndpoint);
-        result.put("chatModel", chatModelName);
-        result.put("visionModel", visionModelName);
+        result.put("geminiApiConfigured", geminiApiKey != null && !geminiApiKey.trim().isEmpty());
+        result.put("groqApiConfigured", groqApiKey != null && !groqApiKey.trim().isEmpty());
+        result.put("chatModel", "llama3-8b-8192");
+        result.put("visionModel", "gemini-1.5-flash");
 
         return ResponseEntity.ok(ApiResponse.ok("FarmSense AI Running", result));
     }
 
     /**
-     * GET /api/farm/debug/ollama — Deep Ollama connectivity diagnostic.
-     * Returns full model list, latency, exact URLs, and error details.
+     * GET /api/farm/debug/ai — Deep hosted AI connectivity diagnostic.
+     * Returns latency, exact URLs, and error details.
      */
-    @GetMapping("/debug/ollama")
-    public ResponseEntity<?> debugOllama() {
-        String sanitizedUrl = ollamaBaseUrl.replaceAll("/+$", "").replaceAll("/api$", "");
-        String endpoint = sanitizedUrl + "/api/tags";
+    @GetMapping("/debug/ai")
+    public ResponseEntity<?> debugAi() {
         long startTime = System.currentTimeMillis();
 
-        log.info("=== OLLAMA DEBUG PROBE ===");
-        log.info("Raw configured URL: {}", ollamaBaseUrl);
-        log.info("Sanitized URL: {}", sanitizedUrl);
-        log.info("Probe endpoint: {}", endpoint);
+        log.info("=== AI DEBUG PROBE ===");
 
         java.util.LinkedHashMap<String, Object> debug = new java.util.LinkedHashMap<>();
-        debug.put("configuredBaseUrl", ollamaBaseUrl);
-        debug.put("sanitizedBaseUrl", sanitizedUrl);
-        debug.put("probeEndpoint", endpoint);
-        debug.put("chatModel", chatModelName);
-        debug.put("visionModel", visionModelName);
+        debug.put("geminiConfigured", geminiApiKey != null && !geminiApiKey.trim().isEmpty());
+        debug.put("groqConfigured", groqApiKey != null && !groqApiKey.trim().isEmpty());
+        debug.put("chatModel", "llama3-8b-8192");
+        debug.put("visionModel", "gemini-1.5-flash");
 
         try {
             HttpClient client = HttpClient.newBuilder()
                     .connectTimeout(Duration.ofSeconds(10))
                     .build();
-            HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create(endpoint))
-                    .timeout(Duration.ofSeconds(60))
-                    .header("ngrok-skip-browser-warning", "true")
+            HttpRequest geminiRequest = HttpRequest.newBuilder()
+                    .uri(URI.create("https://generativelanguage.googleapis.com/v1beta/models?key=" + geminiApiKey))
+                    .timeout(Duration.ofSeconds(30))
                     .header("User-Agent", "FarmSense-AI/2.0")
                     .GET()
                     .build();
-            HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
-            long latency = System.currentTimeMillis() - startTime;
+            HttpResponse<String> geminiResp = client.send(geminiRequest, HttpResponse.BodyHandlers.ofString());
+            debug.put("geminiHttpStatus", geminiResp.statusCode());
+            debug.put("geminiLatencyMs", System.currentTimeMillis() - startTime);
 
-            debug.put("httpStatus", resp.statusCode());
-            debug.put("latencyMs", latency);
-            debug.put("reachable", resp.statusCode() == 200);
+            HttpRequest groqRequest = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.groq.com/openai/v1/models"))
+                    .timeout(Duration.ofSeconds(30))
+                    .header("Authorization", "Bearer " + groqApiKey)
+                    .header("User-Agent", "FarmSense-AI/2.0")
+                    .GET()
+                    .build();
+            HttpResponse<String> groqResp = client.send(groqRequest, HttpResponse.BodyHandlers.ofString());
+            debug.put("groqHttpStatus", groqResp.statusCode());
+            debug.put("groqLatencyMs", System.currentTimeMillis() - startTime);
 
-            if (resp.statusCode() == 200) {
-                try {
-                    var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-                    var tree = mapper.readTree(resp.body());
-                    var models = tree.get("models");
-                    if (models != null && models.isArray()) {
-                        java.util.List<String> modelNames = new java.util.ArrayList<>();
-                        for (var m : models) {
-                            modelNames.add(m.has("name") ? m.get("name").asText() : "unknown");
-                        }
-                        debug.put("availableModels", modelNames);
-                        debug.put("modelCount", modelNames.size());
-                        debug.put("chatModelAvailable", modelNames.stream()
-                                .anyMatch(n -> n.contains(chatModelName.replace(":latest", ""))));
-                        debug.put("visionModelAvailable", modelNames.stream()
-                                .anyMatch(n -> n.contains(visionModelName.replace(":7b", ""))));
-                    }
-                } catch (Exception e) {
-                    debug.put("parseWarning", "Could not parse model list: " + e.getMessage());
-                    debug.put("rawResponsePreview", resp.body().substring(0, Math.min(500, resp.body().length())));
-                }
-            } else {
-                debug.put("rawResponsePreview", resp.body().substring(0, Math.min(500, resp.body().length())));
-            }
-
-            log.info("Ollama debug probe: status={}, latency={}ms", resp.statusCode(), latency);
+            debug.put("reachable", geminiResp.statusCode() == 200 && groqResp.statusCode() == 200);
 
         } catch (HttpTimeoutException e) {
             long latency = System.currentTimeMillis() - startTime;
             debug.put("reachable", false);
             debug.put("error", "TIMEOUT after " + latency + "ms");
             debug.put("latencyMs", latency);
-            log.error("Ollama debug probe TIMEOUT: {}ms", latency);
+            log.error("AI debug probe TIMEOUT: {}ms", latency);
         } catch (Exception e) {
             long latency = System.currentTimeMillis() - startTime;
             debug.put("reachable", false);
             debug.put("error", e.getClass().getSimpleName() + ": " + e.getMessage());
             debug.put("latencyMs", latency);
-            log.error("Ollama debug probe FAILED: {}", e.getMessage(), e);
+            log.error("AI debug probe FAILED: {}", e.getMessage(), e);
         }
 
-        return ResponseEntity.ok(ApiResponse.ok("Ollama Debug Info", debug));
+        return ResponseEntity.ok(ApiResponse.ok("AI Debug Info", debug));
     }
 }

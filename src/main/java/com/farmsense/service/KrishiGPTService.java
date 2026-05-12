@@ -1,37 +1,38 @@
 package com.farmsense.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.farmsense.model.dto.DetectionResult;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
-import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.Media;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.core.io.ByteArrayResource;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.util.MimeTypeUtils;
+import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.time.Duration;
 
+/**
+ * KrishiGPT service using Groq Llama 3 API.
+ * Direct HTTP implementation for reliability.
+ */
 @Service
 @Slf4j
 public class KrishiGPTService {
 
-    private final ChatClient chatClient;
-    private final ChatClient visionChatClient;
-    private final ChatMemory chatMemory;
+    private final WebClient webClient;
+    private final ObjectMapper objectMapper;
 
-    public KrishiGPTService(
-            @Qualifier("chatChatClient") ChatClient chatClient,
-            @Qualifier("visionChatClient") ChatClient visionChatClient,
-            ChatMemory chatMemory) {
-        this.chatClient = chatClient;
-        this.visionChatClient = visionChatClient;
-        this.chatMemory = chatMemory;
+    @Value("${GROQ_API_KEY:}")
+    private String groqApiKey;
+
+    @Value("${app.ai.groq-model:llama3-8b-8192}")
+    private String groqModel;
+
+    public KrishiGPTService(WebClient.Builder webClientBuilder, ObjectMapper objectMapper) {
+        this.webClient = webClientBuilder.build();
+        this.objectMapper = objectMapper;
     }
 
     private static final Map<String, String> LANGUAGE_NAMES = Map.of(
@@ -48,6 +49,7 @@ public class KrishiGPTService {
     }
 
     public String askKrishiGPT(String userId, String question, String crop, String langCode, String imageBase64) {
+        long startedAt = System.currentTimeMillis();
         try {
             String language = safeLanguageName(langCode);
             String safeCrop = (crop == null || crop.isBlank()) ? "general" : crop;
@@ -78,37 +80,76 @@ public class KrishiGPTService {
 
             String conversationId = (userId != null && !userId.isBlank()) ? userId : "anonymous";
 
+            // For now, Groq doesn't support vision, so we'll handle text-only queries
+            // If image is provided, we'll mention it in the prompt but not send the image
             if (imageBase64 != null && !imageBase64.isBlank()) {
-                log.info("Multimodal chat request with image from user: {}", userId);
-                byte[] imageBytes = Base64.getDecoder().decode(imageBase64.contains(",") ? imageBase64.split(",")[1] : imageBase64);
-                
-                var media = new Media(MimeTypeUtils.IMAGE_JPEG, new ByteArrayResource(imageBytes));
-                var userMessage = new UserMessage(safeQuestion, List.of(media));
-
-                return visionChatClient.prompt(new Prompt(List.of(userMessage)))
-                        .system(systemPrompt)
-                        .advisors(new MessageChatMemoryAdvisor(chatMemory, conversationId, 10))
-                        .call()
-                        .content();
+                log.info("Image provided but Groq doesn't support vision yet. Analyzing text query with image context.");
+                safeQuestion = safeQuestion + " [User has provided an image of the crop for analysis]";
             }
 
-            return chatClient.prompt()
-                    .system(systemPrompt)
-                    .user(safeQuestion)
-                    .advisors(new MessageChatMemoryAdvisor(chatMemory, conversationId, 10))
-                    .call()
-                    .content();
+            // Build Groq API request
+            Map<String, Object> requestBody = Map.of(
+                "model", groqModel,
+                "messages", List.of(
+                    Map.of("role", "system", "content", systemPrompt),
+                    Map.of("role", "user", "content", safeQuestion)
+                ),
+                "temperature", 0.3,
+                "max_tokens", 200
+            );
+
+            log.debug("[GROQ] Sending chat request for question: {}... | model={}", 
+                    safeQuestion.length() > 50 ? safeQuestion.substring(0, 50) + "..." : safeQuestion, groqModel);
+            
+            long apiCallStart = System.currentTimeMillis();
+            String response = webClient.post()
+                    .uri("https://api.groq.com/openai/v1/chat/completions")
+                    .header("Authorization", "Bearer " + groqApiKey)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(requestBody)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .timeout(Duration.ofSeconds(45))
+                    .onErrorMap(e -> {
+                        long duration = System.currentTimeMillis() - apiCallStart;
+                        String errorType = e.getClass().getSimpleName();
+                        log.error("[GROQ] API call failed with {} after {}ms: {}", 
+                                errorType, duration, e.getMessage());
+                        return new RuntimeException(
+                                "Groq API error (" + errorType + " after " + duration + "ms): " + e.getMessage(), e);
+                    })
+                    .block();
+
+            long apiDuration = System.currentTimeMillis() - apiCallStart;
+            if (response == null || response.isBlank()) {
+                throw new RuntimeException("Groq returned empty response after " + apiDuration + "ms");
+            }
+
+            log.info("[GROQ] Chat request completed in {}ms | Total time: {}ms | Response: {}chars",
+                    apiDuration, System.currentTimeMillis() - startedAt, response.length());
+
+            // Parse Groq response
+            JsonNode root = objectMapper.readTree(response);
+            if (root.has("error")) {
+                String errorMsg = root.get("error").get("message").asText();
+                throw new RuntimeException("Groq API returned error: " + errorMsg);
+            }
+
+            String content = root.get("choices").get(0).get("message").get("content").asText();
+            log.debug("[GROQ] Extracted response: {}chars", content.length());
+            return content;
 
         } catch (Exception e) {
-            log.error("KrishiGPT failed: {}", e.getMessage(), e);
-            return "I am sorry, I could not process your question right now. " +
-                    "Please try again in a few moments. Meanwhile, consult your local " +
-                    "Krishi Vigyan Kendra (KVK) for immediate help.";
+            long totalTime = System.currentTimeMillis() - startedAt;
+            log.error("[GROQ] Chat failed after {}ms | {} | {}", 
+                    totalTime, e.getClass().getSimpleName(), e.getMessage());
+            return "Sorry, I'm having trouble connecting to the AI service right now. Please try again in a moment.";
         }
     }
 
     // Keep generateTreatmentPlan as is
     public String generateTreatmentPlan(DetectionResult result, String langCode) {
+        long startedAt = System.currentTimeMillis();
         try {
             String language = safeLanguageName(langCode);
             String treatmentList = String.join(", ", result.getOrganicTreatment());
@@ -129,12 +170,43 @@ public class KrishiGPTService {
                     Use simple farmer-friendly language.
                     """.formatted(language, result.getDiseaseName(),
                     result.getSeverity(), treatmentList);
+            
+            // Build Groq API request for treatment plan
+            Map<String, Object> requestBody = Map.of(
+                "model", groqModel,
+                "messages", List.of(
+                    Map.of("role", "system", "content", "You are KrishiGPT, an expert Indian agricultural scientist."),
+                    Map.of("role", "user", "content", planPrompt)
+                ),
+                "temperature", 0.2,
+                "max_tokens", 300
+            );
 
-            return chatClient.prompt()
-                    .system("You are KrishiGPT, an expert Indian agricultural scientist.")
-                    .user(planPrompt)
-                    .call()
-                    .content();
+            String response = webClient.post()
+                    .uri("https://api.groq.com/openai/v1/chat/completions")
+                    .header("Authorization", "Bearer " + groqApiKey)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(requestBody)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .timeout(Duration.ofSeconds(45))
+                    .block();
+
+            if (response == null || response.isBlank()) {
+                throw new RuntimeException("Groq returned empty response for treatment plan");
+            }
+
+                log.info("Groq treatment plan request completed durationMs={}", System.currentTimeMillis() - startedAt);
+
+            // Parse Groq response
+            JsonNode root = objectMapper.readTree(response);
+            if (root.has("error")) {
+                String errorMsg = root.get("error").get("message").asText();
+                throw new RuntimeException("Groq API error: " + errorMsg);
+            }
+
+            String content = root.get("choices").get(0).get("message").get("content").asText();
+            return content;
 
         } catch (Exception e) {
             log.error("Treatment plan generation failed: {}", e.getMessage(), e);
