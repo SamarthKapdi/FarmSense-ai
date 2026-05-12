@@ -327,7 +327,7 @@ public class DetectionController {
         result.put("geminiApiConfigured", geminiApiKey != null && !geminiApiKey.trim().isEmpty());
         result.put("groqApiConfigured", groqApiKey != null && !groqApiKey.trim().isEmpty());
         result.put("chatModel", "llama-3.1-8b-instant");
-        result.put("visionModel", "gemini-1.5-flash");
+        result.put("visionModel", "gemini-2.5-flash");
 
         return ResponseEntity.ok(ApiResponse.ok("FarmSense AI Running", result));
     }
@@ -346,7 +346,7 @@ public class DetectionController {
         debug.put("geminiConfigured", geminiApiKey != null && !geminiApiKey.trim().isEmpty());
         debug.put("groqConfigured", groqApiKey != null && !groqApiKey.trim().isEmpty());
         debug.put("chatModel", "llama-3.1-8b-instant");
-        debug.put("visionModel", "gemini-1.5-flash");
+        debug.put("visionModel", "gemini-2.5-flash");
 
         try {
             HttpClient client = HttpClient.newBuilder()

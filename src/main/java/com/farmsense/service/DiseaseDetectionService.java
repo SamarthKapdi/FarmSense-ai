@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Production-grade crop disease detection using Google Gemini 1.5 Flash Vision API.
+ * Production-grade crop disease detection using Google Gemini 2.5 Flash Vision API.
  * Direct HTTP implementation for reliability.
  */
 @Service
@@ -33,7 +33,7 @@ public class DiseaseDetectionService {
     @Value("${GEMINI_API_KEY:}")
     private String geminiApiKey;
 
-    @Value("${app.ai.gemini-model:gemini-1.5-flash}")
+    @Value("${app.ai.gemini-model:gemini-2.5-flash}")
     private String geminiModel;
 
     public DiseaseDetectionService(WebClient.Builder webClientBuilder, ObjectMapper objectMapper) {
@@ -44,11 +44,13 @@ public class DiseaseDetectionService {
     @jakarta.annotation.PostConstruct
     void logStartupDiagnostics() {
         boolean geminiKeyPresent = geminiApiKey != null && !geminiApiKey.trim().isEmpty();
+        String endpoint = "https://generativelanguage.googleapis.com/v1beta/models/" + geminiModel + ":generateContent";
         log.info("═══════════════════════════════════════════════════════════");
         log.info("  DiseaseDetection Service INITIALIZED");
         log.info("  Gemini API Key configured: {} (length={})", geminiKeyPresent,
                 geminiApiKey != null ? geminiApiKey.trim().length() : 0);
         log.info("  Gemini Model: {}", geminiModel);
+        log.info("  Gemini Endpoint: {}", endpoint);
         log.info("═══════════════════════════════════════════════════════════");
         if (!geminiKeyPresent) {
             log.error("⚠️ GEMINI_API_KEY IS NOT SET! Disease detection will fail for all requests.");
@@ -147,20 +149,28 @@ public class DiseaseDetectionService {
                 )
             );
 
-            log.debug("[GEMINI] Sending request to Gemini API...");
-            long apiCallStart = System.currentTimeMillis();
+            String geminiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/" + geminiModel + ":generateContent?key=" + geminiApiKey;
+            log.info("[GEMINI] Sending request \u2192 model={}, endpoint=https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent", geminiModel, geminiModel);
             
+            long apiCallStart = System.currentTimeMillis();
             String response = webClient.post()
-                    .uri("https://generativelanguage.googleapis.com/v1beta/models/" + geminiModel + ":generateContent?key=" + geminiApiKey)
+                    .uri(geminiEndpoint)
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(requestBody)
                     .retrieve()
                     .bodyToMono(String.class)
                     .timeout(Duration.ofSeconds(45))
                     .onErrorMap(e -> {
+                        long duration = System.currentTimeMillis() - apiCallStart;
                         String errorType = e.getClass().getSimpleName();
+                        // Extract HTTP response body from Gemini errors
+                        if (e instanceof WebClientResponseException wcre) {
+                            String body = wcre.getResponseBodyAsString();
+                            log.error("[GEMINI] HTTP {} from Gemini API after {}ms | Body: {}", 
+                                    wcre.getStatusCode().value(), duration, body);
+                        }
                         log.error("[GEMINI] API call failed with {} after {}ms: {}", 
-                                errorType, System.currentTimeMillis() - apiCallStart, e.getMessage());
+                                errorType, duration, e.getMessage());
                         if ("TimeoutException".equals(errorType)) {
                             return new RuntimeException(
                                     "Gemini API timeout after 45 seconds. The analysis took too long. Please try with a smaller image.", e);
