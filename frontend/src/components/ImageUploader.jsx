@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react'
 import { detectDisease } from '../services/api'
+import { apiUrl } from '../services/baseUrl'
 import { useLanguage } from '../context/LanguageContext'
 
 const CROPS = [
@@ -89,13 +90,13 @@ export default function ImageUploader({ language, farmerId, token, onResult }) {
       )
       setUploadPhase('uploading')
 
-      // XMLHttpRequest for progress events
+      // XMLHttpRequest for progress events — use full backend URL (not relative to Vercel)
       const result = await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest()
         const endpoint =
           selectedImages.length > 1
-            ? '/api/farm/detect-batch'
-            : '/api/farm/detect'
+            ? apiUrl('/farm/detect-batch')
+            : apiUrl('/farm/detect')
         xhr.open('POST', endpoint)
         if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`)
 

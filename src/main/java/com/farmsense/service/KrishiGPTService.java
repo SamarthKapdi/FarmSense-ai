@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,21 @@ public class KrishiGPTService {
         this.objectMapper = objectMapper;
     }
 
+    @jakarta.annotation.PostConstruct
+    void logStartupDiagnostics() {
+        boolean groqKeyPresent = groqApiKey != null && !groqApiKey.trim().isEmpty();
+        log.info("═══════════════════════════════════════════════════════════");
+        log.info("  KrishiGPT Service INITIALIZED");
+        log.info("  Groq API Key configured: {} (length={})", groqKeyPresent, 
+                groqApiKey != null ? groqApiKey.trim().length() : 0);
+        log.info("  Groq Model: {}", groqModel);
+        log.info("  Groq Endpoint: https://api.groq.com/openai/v1/chat/completions");
+        log.info("═══════════════════════════════════════════════════════════");
+        if (!groqKeyPresent) {
+            log.error("⚠️ GROQ_API_KEY IS NOT SET! KrishiGPT will fail for all requests.");
+        }
+    }
+
     private static final Map<String, String> LANGUAGE_NAMES = Map.of(
             "en", "English",
             "hi", "Hindi",
@@ -50,6 +66,11 @@ public class KrishiGPTService {
 
     public String askKrishiGPT(String userId, String question, String crop, String langCode, String imageBase64) {
         long startedAt = System.currentTimeMillis();
+        log.info("[GROQ] === CHAT REQUEST START ===");
+        log.info("[GROQ] API key configured: {}, key length: {}", 
+                groqApiKey != null && !groqApiKey.trim().isEmpty(),
+                groqApiKey != null ? groqApiKey.trim().length() : 0);
+        log.info("[GROQ] Model: {}, Crop: {}, Language: {}, User: {}", groqModel, crop, langCode, userId);
         try {
             String language = safeLanguageName(langCode);
             String safeCrop = (crop == null || crop.isBlank()) ? "general" : crop;
@@ -113,6 +134,13 @@ public class KrishiGPTService {
                     .onErrorMap(e -> {
                         long duration = System.currentTimeMillis() - apiCallStart;
                         String errorType = e.getClass().getSimpleName();
+                        // Extract actual response body from WebClient errors
+                        String responseBody = "";
+                        if (e instanceof WebClientResponseException wcre) {
+                            responseBody = wcre.getResponseBodyAsString();
+                            log.error("[GROQ] HTTP {} from Groq API after {}ms | Body: {}", 
+                                    wcre.getStatusCode().value(), duration, responseBody);
+                        }
                         log.error("[GROQ] API call failed with {} after {}ms: {}", 
                                 errorType, duration, e.getMessage());
                         return new RuntimeException(
@@ -141,8 +169,21 @@ public class KrishiGPTService {
 
         } catch (Exception e) {
             long totalTime = System.currentTimeMillis() - startedAt;
-            log.error("[GROQ] Chat failed after {}ms | {} | {}", 
-                    totalTime, e.getClass().getSimpleName(), e.getMessage());
+            String errorType = e.getClass().getSimpleName();
+            String errorMsg = e.getMessage() != null ? e.getMessage() : "No message";
+            log.error("[GROQ] ❌ CHAT FAILED after {}ms | Type: {} | Message: {} | Cause: {}", 
+                    totalTime, errorType, errorMsg, 
+                    e.getCause() != null ? e.getCause().getClass().getSimpleName() + ": " + e.getCause().getMessage() : "none");
+            
+            // Classify the error for better diagnostics
+            if (errorMsg.contains("401") || errorMsg.contains("Unauthorized") || errorMsg.contains("invalid_api_key")) {
+                log.error("[GROQ] 🔑 API KEY ISSUE — Groq returned 401. Check GROQ_API_KEY on Render.");
+            } else if (errorMsg.contains("timeout") || errorMsg.contains("Timeout")) {
+                log.error("[GROQ] ⏱️ TIMEOUT — Groq API did not respond within deadline.");
+            } else if (errorMsg.contains("Connection") || errorMsg.contains("resolve")) {
+                log.error("[GROQ] 🌐 NETWORK — Cannot reach api.groq.com from this environment.");
+            }
+            
             return "Sorry, I'm having trouble connecting to the AI service right now. Please try again in a moment.";
         }
     }

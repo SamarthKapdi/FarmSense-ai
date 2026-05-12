@@ -56,7 +56,8 @@ public class DetectionController {
         String userEmail = (String) request.getAttribute("userEmail");
         String userName = (String) request.getAttribute("userName");
 
-        log.info("Detection request — Crop: {}, Language: {}, User: {}", crop, language, userEmail);
+        log.info("▶ POST /api/farm/detect HIT — Crop: {}, Language: {}, User: {}, ImageSize: {} bytes", 
+                crop, language, userEmail, image != null ? image.getSize() : 0);
 
         DetectionResult result;
         try {

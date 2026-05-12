@@ -41,6 +41,20 @@ public class DiseaseDetectionService {
         this.objectMapper = objectMapper;
     }
 
+    @jakarta.annotation.PostConstruct
+    void logStartupDiagnostics() {
+        boolean geminiKeyPresent = geminiApiKey != null && !geminiApiKey.trim().isEmpty();
+        log.info("═══════════════════════════════════════════════════════════");
+        log.info("  DiseaseDetection Service INITIALIZED");
+        log.info("  Gemini API Key configured: {} (length={})", geminiKeyPresent,
+                geminiApiKey != null ? geminiApiKey.trim().length() : 0);
+        log.info("  Gemini Model: {}", geminiModel);
+        log.info("═══════════════════════════════════════════════════════════");
+        if (!geminiKeyPresent) {
+            log.error("⚠️ GEMINI_API_KEY IS NOT SET! Disease detection will fail for all requests.");
+        }
+    }
+
     // ═════════════════════════════════════════════════════════════════════════════
     // PUBLIC ENTRY POINT
     // ═════════════════════════════════════════════════════════════════════════════

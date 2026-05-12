@@ -48,7 +48,9 @@ public class ChatController {
         String userEmail = (String) httpRequest.getAttribute("userEmail");
         String userName = (String) httpRequest.getAttribute("userName");
 
-        log.info("Chat — Crop: {}, Language: {}, User: {}", request.getCrop(), request.getLanguage(), userEmail);
+        log.info("▶ POST /api/farm/ask HIT — Crop: {}, Language: {}, User: {}, Question: {}chars", 
+                request.getCrop(), request.getLanguage(), userEmail,
+                request.getQuestion() != null ? request.getQuestion().length() : 0);
 
         String answer = krishiGPTService.askKrishiGPT(
                 userId, request.getQuestion(), request.getCrop(), request.getLanguage(), request.getImageBase64());
