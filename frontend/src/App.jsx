@@ -187,7 +187,7 @@ function AppContent() {
     return <AdminDashboard onNavigate={handleLogout} />
   }
   if (user?.role === 'ROLE_AGRONOMIST') {
-    return <AgronomistPortal onNavigate={handleNavigate} />
+    return <AgronomistPortal onLogout={handleLogout} />
   }
 
   // ── Bottom nav tabs (5 primary + more menu) ──

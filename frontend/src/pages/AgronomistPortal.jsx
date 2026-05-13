@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getDiseaseTrends, getPendingVerifications, verifyDiagnosis, publishAdvisory, getAdvisories } from '../services/agronomistApi';
 
-export default function AgronomistPortal({ onNavigate }) {
+export default function AgronomistPortal({ onLogout }) {
     const [activeTab, setActiveTab] = useState('verifications');
     const [trends, setTrends] = useState([]);
     const [verifications, setVerifications] = useState([]);
@@ -63,6 +63,7 @@ export default function AgronomistPortal({ onNavigate }) {
             });
             setAdvTitle('');
             setAdvContent('');
+            setAdvCrop('All');
             setAdvRegion('');
             alert('Advisory published successfully!');
             setActiveTab('advisories');
@@ -90,8 +91,8 @@ export default function AgronomistPortal({ onNavigate }) {
                         <span className="text-2xl">🔬</span>
                         <h1 className="text-xl font-bold">Agronomist <span className="text-emerald-500">Portal</span></h1>
                     </div>
-                    <button onClick={() => onNavigate('app')} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors text-sm px-3 py-1.5 rounded-lg border border-[var(--border)] hover:border-emerald-500">
-                        Exit Portal
+                    <button onClick={onLogout} className="text-[var(--text-secondary)] hover:text-[var(--danger)] transition-colors text-sm px-3 py-1.5 rounded-lg border border-[var(--border)] hover:border-[var(--danger)] flex items-center gap-2">
+                        <span>🚪</span> Logout
                     </button>
                 </div>
             </header>
@@ -106,7 +107,7 @@ export default function AgronomistPortal({ onNavigate }) {
                 )}
 
                 {/* Tabs */}
-                <div className="flex gap-2 bg-[var(--bg-elevated)] p-1 rounded-xl border border-[var(--border)] w-fit">
+                <div className="flex gap-2 bg-[var(--bg-elevated)] p-1 rounded-xl border border-[var(--border)] w-full sm:w-fit overflow-x-auto whitespace-nowrap">
                     <TabButton active={activeTab === 'verifications'} onClick={() => setActiveTab('verifications')} icon="✅" label="Pending Verifications" />
                     <TabButton active={activeTab === 'trends'} onClick={() => setActiveTab('trends')} icon="📈" label="Disease Trends" />
                     <TabButton active={activeTab === 'publish'} onClick={() => setActiveTab('publish')} icon="📢" label="Publish Advisory" />
@@ -225,7 +226,7 @@ function TabButton({ active, onClick, icon, label }) {
     return (
         <button
             onClick={onClick}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
                 active ? 'bg-emerald-600 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'
             }`}
         >
