@@ -239,18 +239,8 @@ public class WeatherService {
         }
 
         try {
-            // Open-Meteo geocoding search doesn't support reverse, 
-            // but the prompt explicitly asked to pass lat/lon to Open-Meteo search.
-            // As a fallback to provide a real city name, we use BigDataCloud or similar free APIs
-            // but the instructions say USE ONLY OPEN-METEO.
-            // I'll try to find a city by calling search with coordinates as a query if possible,
-            // or just return "Nearby Location" if not.
-            // Actually, many developers use Nominatim for reverse, but I must follow instructions.
-            // Let's assume the coordinates themselves are the best identifier if geocoding fails.
-            
-            // Search API: https://geocoding-api.open-meteo.com/v1/search?name=...
-            // It doesn't take lat/lon for reverse geocoding. 
-            // I'll return "📍 Location" as a placeholder unless I can find a way.
+            // Open-Meteo geocoding search doesn't support reverse geocoding via lat/lon.
+            // Using a generic location identifier since coordinates are the primary source of truth.
             
             String name = "📍 Current Location";
             cityCache.put(cacheKey, name);

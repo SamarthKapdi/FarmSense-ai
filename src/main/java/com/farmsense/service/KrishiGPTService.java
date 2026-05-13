@@ -10,13 +10,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.time.Duration;
 
 /**
- * KrishiGPT service using Groq Llama 3 API.
- * Direct HTTP implementation for reliability.
+ * KrishiGPT — AI farming assistant with real multimodal support.
+ * Text queries → Groq Llama 3.1 (fast, conversational)
+ * Image queries → Gemini Vision (analysis) → Groq (conversational response)
  */
 @Service
 @Slf4j
@@ -24,6 +27,8 @@ public class KrishiGPTService {
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
+    private final DiseaseDetectionService diseaseDetectionService;
+    private final com.farmsense.repository.ChatHistoryRepository chatHistoryRepository;
 
     @Value("${GROQ_API_KEY:}")
     private String groqApiKey;
@@ -31,9 +36,13 @@ public class KrishiGPTService {
     @Value("${app.ai.groq-model:llama-3.1-8b-instant}")
     private String groqModel;
 
-    public KrishiGPTService(WebClient.Builder webClientBuilder, ObjectMapper objectMapper) {
+    public KrishiGPTService(WebClient.Builder webClientBuilder, ObjectMapper objectMapper,
+                            DiseaseDetectionService diseaseDetectionService,
+                            com.farmsense.repository.ChatHistoryRepository chatHistoryRepository) {
         this.webClient = webClientBuilder.build();
         this.objectMapper = objectMapper;
+        this.diseaseDetectionService = diseaseDetectionService;
+        this.chatHistoryRepository = chatHistoryRepository;
     }
 
     @jakarta.annotation.PostConstruct
@@ -41,13 +50,13 @@ public class KrishiGPTService {
         boolean groqKeyPresent = groqApiKey != null && !groqApiKey.trim().isEmpty();
         log.info("═══════════════════════════════════════════════════════════");
         log.info("  KrishiGPT Service INITIALIZED");
-        log.info("  Groq API Key configured: {} (length={})", groqKeyPresent, 
+        log.info("  Groq API Key configured: {} (length={})", groqKeyPresent,
                 groqApiKey != null ? groqApiKey.trim().length() : 0);
         log.info("  Groq Model: {}", groqModel);
-        log.info("  Groq Endpoint: https://api.groq.com/openai/v1/chat/completions");
+        log.info("  Multimodal: Gemini Vision → Groq pipeline active");
         log.info("═══════════════════════════════════════════════════════════");
         if (!groqKeyPresent) {
-            log.error("⚠️ GROQ_API_KEY IS NOT SET! KrishiGPT will fail for all requests.");
+            log.error("GROQ_API_KEY IS NOT SET! KrishiGPT will fail for all requests.");
         }
     }
 
@@ -64,13 +73,15 @@ public class KrishiGPTService {
         return LANGUAGE_NAMES.getOrDefault(normalized, "English");
     }
 
+    // ═════════════════════════════════════════════════════════════════════════════
+    // MAIN CHAT ENDPOINT — handles text-only AND image+text queries
+    // ═════════════════════════════════════════════════════════════════════════════
+
     public String askKrishiGPT(String userId, String question, String crop, String langCode, String imageBase64) {
         long startedAt = System.currentTimeMillis();
-        log.info("[GROQ] === CHAT REQUEST START ===");
-        log.info("[GROQ] API key configured: {}, key length: {}", 
-                groqApiKey != null && !groqApiKey.trim().isEmpty(),
-                groqApiKey != null ? groqApiKey.trim().length() : 0);
-        log.info("[GROQ] Model: {}, Crop: {}, Language: {}, User: {}", groqModel, crop, langCode, userId);
+        log.info("[CHAT] Request — crop={}, lang={}, hasImage={}, user={}",
+                crop, langCode, imageBase64 != null && !imageBase64.isBlank(), userId);
+
         try {
             String language = safeLanguageName(langCode);
             String safeCrop = (crop == null || crop.isBlank()) ? "general" : crop;
@@ -78,188 +89,252 @@ public class KrishiGPTService {
                     ? "Share practical crop care advice for this week."
                     : question;
 
-            String systemPrompt = """
-                    You are KrishiGPT, an expert Indian agricultural scientist \
-                    with 20 years of experience helping farmers across India.
-
-                    STRICT RULES YOU MUST FOLLOW:
-                    - Respond ONLY in %s language
-                    - Be practical and specific to Indian farming conditions
-                    - Keep your response under 150 words maximum
-                    - Use simple language a farmer with basic education understands
-                    - Current crop context: %s
-
-                    SAFETY RULES (NEVER VIOLATE):
-                    - NEVER invent or fabricate pesticide names, chemical names, or brand names
-                    - NEVER quote specific prices unless you are absolutely certain
-                    - NEVER recommend specific commercial products by brand name
-                    - If you are unsure about any treatment, say: "Consult your local Krishi Vigyan Kendra (KVK)"
-                    - Only recommend well-known generic treatments: neem oil, copper fungicide, crop rotation, proper drainage
-                    - Always mention cheapest organic solution first, then general chemical category
-                    - If an image is provided, analyze it for diseases and pests first
-                    """.formatted(language, safeCrop);
-
-            String conversationId = (userId != null && !userId.isBlank()) ? userId : "anonymous";
-
-            // For now, Groq doesn't support vision, so we'll handle text-only queries
-            // If image is provided, we'll mention it in the prompt but not send the image
+            // ── MULTIMODAL: If image is provided, analyze it with Gemini Vision first ──
+            String imageContext = null;
             if (imageBase64 != null && !imageBase64.isBlank()) {
-                log.info("Image provided but Groq doesn't support vision yet. Analyzing text query with image context.");
-                safeQuestion = safeQuestion + " [User has provided an image of the crop for analysis]";
+                log.info("[CHAT] Image provided — routing to Gemini Vision for analysis");
+                imageContext = analyzeImageWithGemini(imageBase64, safeCrop);
+                if (imageContext != null) {
+                    log.info("[CHAT] Gemini Vision analysis complete: {}chars", imageContext.length());
+                } else {
+                    log.warn("[CHAT] Gemini Vision analysis returned null — proceeding with text-only");
+                }
             }
 
-            // Build Groq API request
-            Map<String, Object> requestBody = Map.of(
-                "model", groqModel,
-                "messages", List.of(
-                    Map.of("role", "system", "content", systemPrompt),
-                    Map.of("role", "user", "content", safeQuestion)
-                ),
-                "temperature", 0.3,
-                "max_tokens", 200
-            );
-
-            log.info("[GROQ] Sending request → URL: https://api.groq.com/openai/v1/chat/completions | Model: {} | Question: {}...", 
-                    groqModel, safeQuestion.length() > 60 ? safeQuestion.substring(0, 60) + "..." : safeQuestion);
+            // ── Fetch Conversation Memory ──
+            List<com.farmsense.model.entity.ChatHistory> history = new ArrayList<>();
+            if (userId != null) {
+                history = chatHistoryRepository.findByUserIdOrderByCreatedAtDesc(userId);
+            }
             
-            long apiCallStart = System.currentTimeMillis();
-            String response = webClient.post()
-                    .uri("https://api.groq.com/openai/v1/chat/completions")
-                    .header("Authorization", "Bearer " + groqApiKey)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(requestBody)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .timeout(Duration.ofSeconds(45))
-                    .onErrorMap(e -> {
-                        long duration = System.currentTimeMillis() - apiCallStart;
-                        String errorType = e.getClass().getSimpleName();
-                        // Extract actual response body from WebClient errors
-                        String responseBody = "";
-                        if (e instanceof WebClientResponseException wcre) {
-                            responseBody = wcre.getResponseBodyAsString();
-                            log.error("[GROQ] HTTP {} from Groq API after {}ms | Body: {}", 
-                                    wcre.getStatusCode().value(), duration, responseBody);
-                        }
-                        log.error("[GROQ] API call failed with {} after {}ms: {}", 
-                                errorType, duration, e.getMessage());
-                        return new RuntimeException(
-                                "Groq API error (" + errorType + " after " + duration + "ms): " + e.getMessage(), e);
-                    })
-                    .block();
+            // ── Build system prompt ──
+            String systemPrompt = buildSystemPrompt(language, safeCrop, imageContext);
 
-            long apiDuration = System.currentTimeMillis() - apiCallStart;
-            if (response == null || response.isBlank()) {
-                throw new RuntimeException("Groq returned empty response after " + apiDuration + "ms");
+            // ── Build user message with history context ──
+            StringBuilder userContext = new StringBuilder();
+            if (!history.isEmpty()) {
+                userContext.append("PREVIOUS CHAT HISTORY (for context):\n");
+                for (int i = Math.min(2, history.size() - 1); i >= 0; i--) {
+                    userContext.append("Farmer: ").append(history.get(i).getQuestion()).append("\n");
+                    userContext.append("KrishiGPT: ").append(history.get(i).getAnswer()).append("\n\n");
+                }
             }
 
-            log.info("[GROQ] Chat request completed in {}ms | Total time: {}ms | Response: {}chars",
-                    apiDuration, System.currentTimeMillis() - startedAt, response.length());
-
-            // Parse Groq response
-            JsonNode root = objectMapper.readTree(response);
-            if (root.has("error")) {
-                String errorMsg = root.get("error").get("message").asText();
-                throw new RuntimeException("Groq API returned error: " + errorMsg);
+            if (imageContext != null) {
+                userContext.append("IMAGE ANALYSIS CONTEXT:\n").append(imageContext).append("\n\n");
             }
+            userContext.append("FARMER's CURRENT QUESTION: ").append(safeQuestion);
 
-            String content = root.get("choices").get(0).get("message").get("content").asText();
-            log.debug("[GROQ] Extracted response: {}chars", content.length());
-            return content;
+            // ── Call Groq ──
+            return callGroq(systemPrompt, userContext.toString(), startedAt);
 
         } catch (Exception e) {
             long totalTime = System.currentTimeMillis() - startedAt;
-            String errorType = e.getClass().getSimpleName();
-            String errorMsg = e.getMessage() != null ? e.getMessage() : "No message";
-            log.error("[GROQ] ❌ CHAT FAILED after {}ms | Type: {} | Message: {} | Cause: {}", 
-                    totalTime, errorType, errorMsg, 
-                    e.getCause() != null ? e.getCause().getClass().getSimpleName() + ": " + e.getCause().getMessage() : "none");
-            
-            // Classify the error for better diagnostics
-            if (errorMsg.contains("401") || errorMsg.contains("Unauthorized") || errorMsg.contains("invalid_api_key")) {
-                log.error("[GROQ] 🔑 API KEY ISSUE — Groq returned 401. Check GROQ_API_KEY on Render.");
-            } else if (errorMsg.contains("timeout") || errorMsg.contains("Timeout")) {
-                log.error("[GROQ] ⏱️ TIMEOUT — Groq API did not respond within deadline.");
-            } else if (errorMsg.contains("Connection") || errorMsg.contains("resolve")) {
-                log.error("[GROQ] 🌐 NETWORK — Cannot reach api.groq.com from this environment.");
-            }
-            
-            return "Sorry, I'm having trouble connecting to the AI service right now. Please try again in a moment.";
+            log.error("[CHAT] Failed after {}ms: {} — {}", totalTime,
+                    e.getClass().getSimpleName(), e.getMessage());
+            return "Sorry, I'm having trouble connecting right now. Please try again in a moment.";
         }
     }
 
-    // Keep generateTreatmentPlan as is
+    // ═════════════════════════════════════════════════════════════════════════════
+    // REAL IMAGE ANALYSIS — Gemini Vision
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    private String analyzeImageWithGemini(String imageBase64, String crop) {
+        try {
+            // Strip data URL prefix if present
+            String cleanBase64 = imageBase64;
+            if (cleanBase64.contains(",")) {
+                cleanBase64 = cleanBase64.substring(cleanBase64.indexOf(",") + 1);
+            }
+
+            byte[] imageBytes = Base64.getDecoder().decode(cleanBase64);
+            return diseaseDetectionService.analyzeImageForChat(imageBytes, crop);
+
+        } catch (Exception e) {
+            log.warn("[CHAT] Image decode/analysis failed: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════════
+    // SYSTEM PROMPT — crop-aware, image-context-aware, non-repetitive
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    private String buildSystemPrompt(String language, String crop, String imageContext) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("""
+                You are KrishiGPT, a senior Indian agricultural scientist with deep expertise \
+                in crop pathology, soil science, integrated pest management, and organic farming.
+                
+                RESPONSE RULES:
+                - Respond ONLY in %s language
+                - Keep responses under 200 words — be concise but expert
+                - Use simple language a farmer with basic education can understand
+                - Be specific to %s cultivation in Indian conditions
+                - AVOID repeating generic phrases like "consult KVK", "neem oil", "crop rotation", or "proper drainage" unless directly relevant
+                - Do NOT give generic templates. Offer tailored, crop-specific advice
+                - If the farmer's question lacks detail (or image quality is poor), ask CONTEXTUAL follow-up questions (e.g., leaf age, irrigation pattern, weather conditions)
+                """.formatted(language, crop));
+
+        sb.append("""
+                
+                TREATMENT GUIDELINES:
+                - Start with the most effective, accessible solution
+                - Include specific dosages (e.g., "2ml per litre") and spray intervals
+                - If uncertain, ask clarifying questions instead of guessing
+                
+                SAFETY RULES:
+                - NEVER invent chemical or brand names
+                - NEVER guarantee crop recovery
+                - Avoid assuming diseases without visual/textual evidence
+                """);
+
+        if (imageContext != null) {
+            sb.append("""
+                    
+                    IMAGE ANALYSIS:
+                    The farmer has shared a crop image. Gemini Vision has analyzed it and found:
+                    %s
+                    
+                    Use this analysis to answer the farmer's question about their crop.
+                    Reference specific symptoms visible in the image.
+                    """.formatted(imageContext));
+        }
+
+        return sb.toString();
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════════
+    // GROQ API CALL
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    private String callGroq(String systemPrompt, String userMessage, long startedAt) throws Exception {
+        Map<String, Object> requestBody = Map.of(
+            "model", groqModel,
+            "messages", List.of(
+                Map.of("role", "system", "content", systemPrompt),
+                Map.of("role", "user", "content", userMessage)
+            ),
+            "temperature", 0.4,
+            "max_tokens", 400
+        );
+
+        long apiCallStart = System.currentTimeMillis();
+        String response = webClient.post()
+                .uri("https://api.groq.com/openai/v1/chat/completions")
+                .header("Authorization", "Bearer " + groqApiKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(String.class)
+                .timeout(Duration.ofSeconds(45))
+                .onErrorMap(e -> {
+                    long duration = System.currentTimeMillis() - apiCallStart;
+                    if (e instanceof WebClientResponseException wcre) {
+                        int status = wcre.getStatusCode().value();
+                        log.error("[GROQ] HTTP {} after {}ms | Body: {}", status, duration, wcre.getResponseBodyAsString());
+                        if (status == 429) return new RuntimeException("AI_QUOTA_EXCEEDED: Groq API rate limit or quota exceeded.");
+                        if (status == 401 || status == 403) return new RuntimeException("AI_AUTH_FAILURE: Invalid Groq API key.");
+                        if (status >= 500) return new RuntimeException("AI_UPSTREAM_OUTAGE: Groq API is currently down.");
+                    } else if (e instanceof java.util.concurrent.TimeoutException) {
+                        log.error("[GROQ] Timeout after {}ms", duration);
+                        return new RuntimeException("AI_TIMEOUT: Groq API took too long to respond.");
+                    }
+                    log.error("[GROQ] Failed with {} after {}ms: {}", e.getClass().getSimpleName(), duration, e.getMessage());
+                    return new RuntimeException("AI_UNKNOWN_ERROR: " + e.getMessage(), e);
+                })
+                .block();
+
+        if (response == null || response.isBlank()) {
+            throw new RuntimeException("Groq returned empty response");
+        }
+
+        log.info("[GROQ] Completed in {}ms (total={}ms)",
+                System.currentTimeMillis() - apiCallStart, System.currentTimeMillis() - startedAt);
+
+        JsonNode root = objectMapper.readTree(response);
+        if (root.has("error")) {
+            throw new RuntimeException("Groq error: " + root.path("error").path("message").asText());
+        }
+
+        return root.path("choices").get(0).path("message").path("content").asText();
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════════
+    // TREATMENT PLAN GENERATION
+    // ═════════════════════════════════════════════════════════════════════════════
+
     public String generateTreatmentPlan(DetectionResult result, String langCode) {
         long startedAt = System.currentTimeMillis();
         try {
             String language = safeLanguageName(langCode);
-            String treatmentList = String.join(", ", result.getOrganicTreatment());
+
+            String organicList = result.getOrganicTreatment() != null
+                    ? String.join(", ", result.getOrganicTreatment()) : "consult expert";
+            String chemicalList = result.getChemicalTreatment() != null
+                    ? String.join(", ", result.getChemicalTreatment()) : "consult expert";
 
             String planPrompt = """
-                    Create a practical 7-day treatment plan in %s for a farmer \
-                    dealing with %s with %s severity.
-                    Available treatments: %s.
-                    Format exactly as:
-                    Day 1: [specific action]
+                    Create a specific, actionable 7-day treatment plan in %s for a farmer \
+                    dealing with %s (%s severity) in their %s crop.
+                    
+                    Available organic treatments: %s
+                    Available chemical treatments: %s
+                    Spray interval: %s
+                    Best treatment time: %s
+                    
+                    Format EXACTLY as:
+                    Day 1: [specific action with dosage/timing]
                     Day 2: [specific action]
                     Day 3: [specific action]
                     Day 4: [specific action]
                     Day 5: [specific action]
                     Day 6: [specific action]
-                    Day 7: [specific action]
-                    Keep each day instruction under 20 words.
-                    Use simple farmer-friendly language.
+                    Day 7: [evaluation and next steps]
+                    
+                    RULES:
+                    - Each day must be different — no repeated actions
+                    - Include specific dosages and timing
+                    - Include monitoring/inspection days
+                    - Keep each day instruction under 25 words
+                    - Be practical for a small Indian farmer
                     """.formatted(language, result.getDiseaseName(),
-                    result.getSeverity(), treatmentList);
-            
-            // Build Groq API request for treatment plan
-            Map<String, Object> requestBody = Map.of(
-                "model", groqModel,
-                "messages", List.of(
-                    Map.of("role", "system", "content", "You are KrishiGPT, an expert Indian agricultural scientist."),
-                    Map.of("role", "user", "content", planPrompt)
-                ),
-                "temperature", 0.2,
-                "max_tokens", 300
-            );
+                    result.getSeverity(), result.getCropName(),
+                    organicList, chemicalList,
+                    result.getSprayInterval() != null ? result.getSprayInterval() : "as needed",
+                    result.getBestTimeToTreat() != null ? result.getBestTimeToTreat() : "early morning");
 
-            String response = webClient.post()
-                    .uri("https://api.groq.com/openai/v1/chat/completions")
-                    .header("Authorization", "Bearer " + groqApiKey)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(requestBody)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .timeout(Duration.ofSeconds(45))
-                    .block();
+            String systemPrompt = "You are KrishiGPT, a senior Indian agricultural scientist creating " +
+                    "a practical treatment plan. Be specific, actionable, and realistic.";
 
-            if (response == null || response.isBlank()) {
-                throw new RuntimeException("Groq returned empty response for treatment plan");
-            }
-
-                log.info("Groq treatment plan request completed durationMs={}", System.currentTimeMillis() - startedAt);
-
-            // Parse Groq response
-            JsonNode root = objectMapper.readTree(response);
-            if (root.has("error")) {
-                String errorMsg = root.get("error").get("message").asText();
-                throw new RuntimeException("Groq API error: " + errorMsg);
-            }
-
-            String content = root.get("choices").get(0).get("message").get("content").asText();
-            return content;
+            return callGroq(systemPrompt, planPrompt, startedAt);
 
         } catch (Exception e) {
-            log.error("Treatment plan generation failed: {}", e.getMessage(), e);
-            return """
-                    Day 1: Inspect all plants and remove severely infected parts
-                    Day 2: Apply neem oil 5ml per litre on all affected plants
-                    Day 3: Improve drainage and air circulation in field
-                    Day 4: Apply recommended fungicide as per dosage
-                    Day 5: Monitor plants for improvement or spread
-                    Day 6: Repeat neem oil spray on remaining infections
-                    Day 7: Evaluate results and plan next spray schedule
-                    """;
+            log.error("[PLAN] Generation failed: {}", e.getMessage());
+            // Return a disease-specific fallback instead of generic neem oil plan
+            return buildMinimalPlan(result);
         }
+    }
+
+    /**
+     * Minimal fallback plan that uses actual detection data instead of generic advice.
+     */
+    private String buildMinimalPlan(DetectionResult result) {
+        String disease = result.getDiseaseName() != null ? result.getDiseaseName() : "the detected condition";
+        String organic = result.getOrganicTreatment() != null && !result.getOrganicTreatment().isEmpty()
+                ? result.getOrganicTreatment().get(0) : "consult your local KVK for organic options";
+        String chemical = result.getChemicalTreatment() != null && !result.getChemicalTreatment().isEmpty()
+                ? result.getChemicalTreatment().get(0) : "consult your local KVK for chemical options";
+
+        return """
+                Day 1: Inspect all plants carefully. Remove and destroy severely infected parts of %s
+                Day 2: Apply organic treatment — %s
+                Day 3: Improve field drainage and air circulation. Monitor spread
+                Day 4: Apply chemical treatment if organic is insufficient — %s
+                Day 5: Monitor plants for improvement. Check neighboring plants
+                Day 6: Re-apply treatment if symptoms persist. Adjust irrigation
+                Day 7: Evaluate recovery progress. Plan next treatment cycle if needed
+                """.formatted(disease, organic, chemical);
     }
 }

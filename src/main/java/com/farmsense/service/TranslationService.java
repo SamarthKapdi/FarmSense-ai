@@ -66,30 +66,49 @@ public class TranslationService {
 
         try {
             return DetectionResult.builder()
+                    // Core identity
                     .diseaseName(translateText(result.getDiseaseName(), targetLang))
-                    .affectedCrops(result.getAffectedCrops())
-                    .severity(translateText(result.getSeverity(), targetLang))
-                    .yieldLossEstimate(result.getYieldLossEstimate())
-                        .symptoms((result.getSymptoms() == null ? List.<String>of() : result.getSymptoms()).stream()
-                            .map(s -> translateText(s, targetLang))
-                            .collect(Collectors.toList()))
-                        .organicTreatment((result.getOrganicTreatment() == null ? List.<String>of() : result.getOrganicTreatment()).stream()
-                            .map(s -> translateText(s, targetLang))
-                            .collect(Collectors.toList()))
-                        .chemicalTreatment((result.getChemicalTreatment() == null ? List.<String>of() : result.getChemicalTreatment()).stream()
-                            .map(s -> translateText(s, targetLang))
-                            .collect(Collectors.toList()))
-                        .preventiveMeasures((result.getPreventiveMeasures() == null ? List.<String>of() : result.getPreventiveMeasures()).stream()
-                            .map(s -> translateText(s, targetLang))
-                            .collect(Collectors.toList()))
-                    .bestTimeToTreat(translateText(result.getBestTimeToTreat(), targetLang))
-                    .estimatedRecoveryCost(translateText(result.getEstimatedRecoveryCost(), targetLang))
-                    .confidence(result.getConfidence())
+                    .scientificName(result.getScientificName()) // Keep Latin name
                     .cropName(result.getCropName())
+                    .description(translateText(result.getDescription(), targetLang))
+                    // Confidence
+                    .confidence(result.getConfidence())
+                    .confidenceReasoning(translateText(result.getConfidenceReasoning(), targetLang))
+                    // Severity
+                    .severity(translateText(result.getSeverity(), targetLang))
+                    .urgencyLevel(result.getUrgencyLevel())
+                    .progressionSpeed(translateText(result.getProgressionSpeed(), targetLang))
+                    .recoverability(translateText(result.getRecoverability(), targetLang))
+                    // Spread
+                    .spreadRisk(translateText(result.getSpreadRisk(), targetLang))
+                    .spreadMechanism(translateText(result.getSpreadMechanism(), targetLang))
+                    // Symptoms
+                    .symptoms(translateList(result.getSymptoms(), targetLang))
+                    // Environmental
+                    .environmentalCauses(translateList(result.getEnvironmentalCauses(), targetLang))
+                    .weatherImpact(translateText(result.getWeatherImpact(), targetLang))
+                    .soilImpact(translateText(result.getSoilImpact(), targetLang))
+                    .wateringAdvice(translateText(result.getWateringAdvice(), targetLang))
+                    .fertilizerAdvice(translateText(result.getFertilizerAdvice(), targetLang))
+                    // Treatments
+                    .organicTreatment(translateList(result.getOrganicTreatment(), targetLang))
+                    .chemicalTreatment(translateList(result.getChemicalTreatment(), targetLang))
+                    .dosage(result.getDosage()) // Keep dosage in original units
+                    .sprayInterval(translateText(result.getSprayInterval(), targetLang))
+                    .preventiveMeasures(translateList(result.getPreventiveMeasures(), targetLang))
+                    .bestTimeToTreat(translateText(result.getBestTimeToTreat(), targetLang))
+                    .monitoringAdvice(translateText(result.getMonitoringAdvice(), targetLang))
+                    // Economic
+                    .yieldLossPercent(result.getYieldLossPercent())
+                    .yieldLossEstimate(result.getYieldLossEstimate())
+                    .yieldLossReasoning(translateText(result.getYieldLossReasoning(), targetLang))
+                    .estimatedRecoveryCost(result.getEstimatedRecoveryCost())
+                    // Differential
+                    .differentialDiagnosis(result.getDifferentialDiagnosis())
+                    // Meta
+                    .isHealthy(result.isHealthy())
                     .language(targetLang)
                     .timestamp(result.getTimestamp())
-                    .isHealthy(result.isHealthy())
-                    .urgencyLevel(result.getUrgencyLevel())
                     .build();
 
         } catch (Exception e) {
@@ -97,5 +116,12 @@ public class TranslationService {
             result.setLanguage(targetLang);
             return result;
         }
+    }
+
+    private List<String> translateList(List<String> items, String targetLang) {
+        if (items == null || items.isEmpty()) return List.of();
+        return items.stream()
+                .map(s -> translateText(s, targetLang))
+                .collect(Collectors.toList());
     }
 }
