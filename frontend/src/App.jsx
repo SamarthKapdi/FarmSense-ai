@@ -75,41 +75,61 @@ function AppContent() {
     }
   }, [token])
 
-  // Connect to SSE for live updates
+  // Connect to SSE for live updates with reconnect
   useEffect(() => {
     fetchNotifications()
 
     if (!token) return
 
-    const baseUrl = API_BASE_URL
-    const streamUrl =
-      user?.role === 'ROLE_ADMIN'
-        ? `${baseUrl}/sse/broadcast`
-        : `${baseUrl}/sse/stream`
+    let retryDelay = 5000
+    let eventSource = null
+    let retryTimeout = null
 
-    const eventSource = new EventSource(`${streamUrl}?token=${token}`)
+    const connect = () => {
+      const baseUrl = API_BASE_URL
+      const streamUrl =
+        user?.role === 'ROLE_ADMIN'
+          ? `${baseUrl}/sse/broadcast`
+          : `${baseUrl}/sse/stream`
 
-    eventSource.addEventListener('notification', (e) => {
-      const newNotif = JSON.parse(e.data)
-      setNotifications((prev) => [newNotif, ...prev])
-      setUnreadCount((prev) => prev + 1)
-      toast.info(`New Notification: ${newNotif.title}`)
-    })
+      eventSource = new EventSource(`${streamUrl}?token=${token}`)
 
-    eventSource.addEventListener('activity', (e) => {
-      const activity = JSON.parse(e.data)
-      if (activity.event === 'REPORT_VERIFIED') {
-        toast.success(`Report Verified: ${activity.disease}`)
+      eventSource.addEventListener('notification', (e) => {
+        try {
+          const newNotif = JSON.parse(e.data)
+          setNotifications((prev) => [newNotif, ...prev])
+          setUnreadCount((prev) => prev + 1)
+          toast.info(`New Notification: ${newNotif.title}`)
+        } catch { /* ignore malformed data */ }
+      })
+
+      eventSource.addEventListener('activity', (e) => {
+        try {
+          const activity = JSON.parse(e.data)
+          if (activity.event === 'REPORT_VERIFIED') {
+            toast.success(`Report Verified: ${activity.disease}`)
+          }
+        } catch { /* ignore */ }
+      })
+
+      eventSource.onopen = () => {
+        retryDelay = 5000 // Reset on successful connection
       }
-    })
 
-    eventSource.onerror = () => {
-      console.error('SSE connection lost, reconnecting...')
-      eventSource.close()
+      eventSource.onerror = () => {
+        eventSource.close()
+        retryTimeout = setTimeout(() => {
+          retryDelay = Math.min(retryDelay * 2, 30000) // Backoff, cap at 30s
+          connect()
+        }, retryDelay)
+      }
     }
 
+    connect()
+
     return () => {
-      eventSource.close()
+      if (eventSource) eventSource.close()
+      if (retryTimeout) clearTimeout(retryTimeout)
     }
   }, [token, user?.role, fetchNotifications, toast])
 
