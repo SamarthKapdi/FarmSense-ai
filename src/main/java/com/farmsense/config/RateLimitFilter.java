@@ -14,15 +14,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Simple in-memory rate limiter for auth endpoints.
- * Max 5 requests per IP per 60-second window on /api/auth/login.
+ * Simple in-memory rate limiter for auth and AI endpoints.
+ * Max 5 login requests per 60s, Max 10 AI requests per 60s.
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 1)
 @Slf4j
 public class RateLimitFilter implements Filter {
 
-    private static final int MAX_ATTEMPTS = 5;
+    private static final int MAX_LOGIN_ATTEMPTS = 5;
+    private static final int MAX_AI_ATTEMPTS = 15;
     private static final long WINDOW_MS = 60_000L;
 
     private final ConcurrentHashMap<String, List<Long>> ipAttempts = new ConcurrentHashMap<>();
@@ -34,23 +35,30 @@ public class RateLimitFilter implements Filter {
         HttpServletRequest request = (HttpServletRequest) req;
         String uri = request.getRequestURI();
 
-        // Only rate-limit login endpoint
-        if ("/api/auth/login".equals(uri) && "POST".equalsIgnoreCase(request.getMethod())) {
+        // Rate-limit login and AI endpoints
+        boolean isLogin = "/api/auth/login".equals(uri) && "POST".equalsIgnoreCase(request.getMethod());
+        boolean isAI = uri.startsWith("/api/farm/") && "POST".equalsIgnoreCase(request.getMethod());
+
+        if (isLogin || isAI) {
             String ip = getClientIp(request);
             long now = System.currentTimeMillis();
 
-            List<Long> timestamps = ipAttempts.computeIfAbsent(ip, k -> new CopyOnWriteArrayList<>());
+            String key = ip + (isLogin ? "_login" : "_ai");
+            List<Long> timestamps = ipAttempts.computeIfAbsent(key, k -> new CopyOnWriteArrayList<>());
 
             // Remove expired entries
             timestamps.removeIf(t -> (now - t) > WINDOW_MS);
 
-            if (timestamps.size() >= MAX_ATTEMPTS) {
-                log.warn("Rate limit exceeded for IP: {}", ip);
+            int maxAttempts = isLogin ? MAX_LOGIN_ATTEMPTS : MAX_AI_ATTEMPTS;
+
+            if (timestamps.size() >= maxAttempts) {
+                log.warn("Rate limit exceeded for IP: {} on URI: {}", ip, uri);
                 HttpServletResponse response = (HttpServletResponse) res;
                 response.setStatus(429);
                 response.setContentType("application/json");
+                String msg = isLogin ? "Too many login attempts." : "Too many AI requests.";
                 response.getWriter().write(
-                        "{\"success\":false,\"message\":\"Too many login attempts. Please try again in 1 minute.\"}");
+                        "{\"success\":false,\"message\":\"" + msg + " Please try again in 1 minute.\"}");
                 return;
             }
 
