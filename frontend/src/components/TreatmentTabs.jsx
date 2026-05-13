@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { generatePlan } from '../services/api'
 
 const TABS = [
@@ -8,6 +8,15 @@ const TABS = [
 ]
 
 export default function TreatmentTabs({ result, language, farmerId, token }) {
+  const filterList = (list) => {
+    if (!Array.isArray(list)) return []
+    return list.filter(item => item && item.toUpperCase() !== 'N/A' && item.toUpperCase() !== 'NONE')
+  }
+
+  const organic = filterList(result.organicTreatment)
+  const chemical = filterList(result.chemicalTreatment)
+  const preventive = filterList(result.preventiveMeasures)
+
   const [activeTab, setActiveTab] = useState('organic')
   const [planLoading, setPlanLoading] = useState(false)
   const [treatmentPlan, setTreatmentPlan] = useState(null)
@@ -15,22 +24,22 @@ export default function TreatmentTabs({ result, language, farmerId, token }) {
   const [expandedDay, setExpandedDay] = useState(null)
   const [copied, setCopied] = useState(false)
 
+  useEffect(() => {
+    if (organic.length > 0) setActiveTab('organic')
+    else if (chemical.length > 0) setActiveTab('chemical')
+    else if (preventive.length > 0) setActiveTab('preventive')
+  }, [result.diseaseName, organic.length, chemical.length, preventive.length])
+
+  if (organic.length === 0 && chemical.length === 0 && preventive.length === 0) {
+    return null
+  }
+
   const getListForTab = () => {
     switch (activeTab) {
-      case 'organic':
-        return Array.isArray(result.organicTreatment)
-          ? result.organicTreatment
-          : []
-      case 'chemical':
-        return Array.isArray(result.chemicalTreatment)
-          ? result.chemicalTreatment
-          : []
-      case 'preventive':
-        return Array.isArray(result.preventiveMeasures)
-          ? result.preventiveMeasures
-          : []
-      default:
-        return []
+      case 'organic': return organic
+      case 'chemical': return chemical
+      case 'preventive': return preventive
+      default: return []
     }
   }
 
@@ -42,13 +51,7 @@ export default function TreatmentTabs({ result, language, farmerId, token }) {
       setShowPlan(true)
     } catch (err) {
       setTreatmentPlan(
-        'Day 1: Inspect all plants and remove severely infected parts\n' +
-          'Day 2: Apply neem oil 5ml per litre on all affected plants\n' +
-          'Day 3: Improve drainage and air circulation in field\n' +
-          'Day 4: Apply recommended fungicide as per dosage\n' +
-          'Day 5: Monitor plants for improvement or spread\n' +
-          'Day 6: Repeat neem oil spray on remaining infections\n' +
-          'Day 7: Evaluate results and plan next spray schedule'
+        'Unable to generate treatment plan right now. Please try again or consult your local KVK for a personalized plan.'
       )
       setShowPlan(true)
     } finally {
@@ -58,37 +61,31 @@ export default function TreatmentTabs({ result, language, farmerId, token }) {
 
   const parsePlanDays = (planText) => {
     if (!planText) return []
-    const text =
-      typeof planText === 'string' ? planText : JSON.stringify(planText)
+    const text = typeof planText === 'string' ? planText : JSON.stringify(planText)
     const lines = text.split('\n').filter((line) => line.trim().length > 0)
     return lines
       .map((line) => {
-        const match = line.match(/Day\s*(\d+)\s*[:.\-]\s*(.*)/i)
-        if (match) {
-          return { day: parseInt(match[1]), action: match[2].trim() }
-        }
+        const match = line.match(/Day\s*(\d+)\s*[:.–\-]\s*(.*)/i)
+        if (match) return { day: parseInt(match[1]), action: match[2].trim() }
         return { day: 0, action: line.trim() }
       })
       .filter((item) => item.action.length > 0)
   }
 
   const handleCopyPlan = async () => {
-    const organic = Array.isArray(result.organicTreatment) ? result.organicTreatment : []
-    const chemical = Array.isArray(result.chemicalTreatment) ? result.chemicalTreatment : []
-    const preventive = Array.isArray(result.preventiveMeasures) ? result.preventiveMeasures : []
+    const dosage = Array.isArray(result.dosage) ? result.dosage.filter(d => d && d.toUpperCase() !== 'N/A' && d.toUpperCase() !== 'NONE') : []
 
     const text = [
-      `🌿 Organic Treatment`,
-      ...organic.map((item, i) => `  ${i + 1}. ${item}`),
+      `🌾 FarmSense AI — ${result.diseaseName || 'Disease'} Treatment Plan`,
+      `Crop: ${result.cropName || 'Unknown'} | Severity: ${result.severity || 'Unknown'}`,
       ``,
-      `💊 Chemical Treatment`,
-      ...chemical.map((item, i) => `  ${i + 1}. ${item}`),
-      ``,
-      `🛡️ Preventive Measures`,
-      ...preventive.map((item, i) => `  ${i + 1}. ${item}`),
-      ``,
-      `Disease: ${result.diseaseName || 'Unknown'}`,
-      `Severity: ${result.severity || 'Unknown'}`,
+      ...(organic.length > 0 ? [`🌿 Organic Treatment`, ...organic.map((item, i) => `  ${i + 1}. ${item}`), ``] : []),
+      ...(chemical.length > 0 ? [`💊 Chemical Treatment`, ...chemical.map((item, i) => `  ${i + 1}. ${item}`), ``] : []),
+      ...(dosage.length > 0 ? [`💉 Dosage`, ...dosage.map((d, i) => `  ${i + 1}. ${d}`), ``] : []),
+      ...(result.sprayInterval && result.sprayInterval.toUpperCase() !== 'N/A' && result.sprayInterval.toUpperCase() !== 'NONE' ? [`📅 Spray Interval: ${result.sprayInterval}`, ``] : []),
+      ...(preventive.length > 0 ? [`🛡️ Preventive Measures`, ...preventive.map((item, i) => `  ${i + 1}. ${item}`), ``] : []),
+      ...(result.bestTimeToTreat && result.bestTimeToTreat.toUpperCase() !== 'N/A' && result.bestTimeToTreat.toUpperCase() !== 'NONE' ? [`🕐 Best Time: ${result.bestTimeToTreat}`, ``] : []),
+      ...(result.monitoringAdvice && result.monitoringAdvice.toUpperCase() !== 'N/A' && result.monitoringAdvice.toUpperCase() !== 'NONE' ? [`👁️ Monitoring: ${result.monitoringAdvice}`, ``] : []),
       `Generated by FarmSense AI`,
     ].join('\n')
 
@@ -96,7 +93,6 @@ export default function TreatmentTabs({ result, language, farmerId, token }) {
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(text)
       } else {
-        // Fallback for older browsers
         const textarea = document.createElement('textarea')
         textarea.value = text
         document.body.appendChild(textarea)
@@ -113,6 +109,16 @@ export default function TreatmentTabs({ result, language, farmerId, token }) {
 
   const items = getListForTab()
   const planDays = parsePlanDays(treatmentPlan)
+  const dosageList = Array.isArray(result.dosage) ? result.dosage : []
+
+  const getTabIcon = () => {
+    switch (activeTab) {
+      case 'organic': return '🌿'
+      case 'chemical': return '💊'
+      case 'preventive': return '🛡️'
+      default: return '📋'
+    }
+  }
 
   return (
     <div className="mt-2">
@@ -123,8 +129,8 @@ export default function TreatmentTabs({ result, language, farmerId, token }) {
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
             transition-all duration-300 border
             ${copied
-              ? 'bg-green-900/40 border-green-600/50 text-green-400'
-              : 'bg-[var(--bg-elevated)] border-[var(--border)] text-[var(--text-muted)] hover:border-emerald-500 hover:text-emerald-500'
+              ? 'bg-[var(--success-bg)] border-[var(--success)] text-[var(--success)]'
+              : 'bg-[var(--bg-elevated)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]'
             }`}
         >
           <span>{copied ? '✅' : '📋'}</span>
@@ -133,19 +139,18 @@ export default function TreatmentTabs({ result, language, farmerId, token }) {
       </div>
 
       {/* Tab Buttons */}
-      <div className="flex gap-2 mb-4 bg-[var(--bg-elevated)] rounded-xl p-1.5">
+      <div className="flex gap-1 mb-4 bg-[var(--bg-elevated)] rounded-xl p-1">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`
-              flex-1 py-2.5 rounded-lg text-sm font-semibold
+              flex-1 py-2.5 rounded-lg text-xs font-semibold
               transition-all duration-300 flex items-center 
               justify-center gap-1.5
-              ${
-                activeTab === tab.id
-                  ? 'bg-gradient-to-r from-accent to-primary text-dark'
-                  : 'text-gray-400 hover:text-[var(--text-primary)]'
+              ${activeTab === tab.id
+                ? 'bg-gradient-to-r from-[var(--accent)] to-[var(--primary)] text-[var(--text-inverse)]'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
               }
             `}
           >
@@ -157,6 +162,11 @@ export default function TreatmentTabs({ result, language, farmerId, token }) {
 
       {/* Treatment List */}
       <div className="disease-card">
+        <h4 className="text-[var(--text-primary)] font-bold mb-3 flex items-center gap-2 text-sm">
+          <span>{getTabIcon()}</span>
+          {activeTab === 'organic' ? 'Organic Treatment' : activeTab === 'chemical' ? 'Chemical Treatment' : 'Preventive Measures'}
+        </h4>
+
         {items.length > 0 ? (
           <div className="space-y-0">
             {items.map((item, index) => (
@@ -165,30 +175,59 @@ export default function TreatmentTabs({ result, language, farmerId, token }) {
                 className="flex items-start gap-3 py-3 
                            border-b border-[var(--border)] last:border-b-0"
               >
-                <div
-                  className="flex-shrink-0 w-7 h-7 bg-accent text-dark 
+                <div className="flex-shrink-0 w-6 h-6 bg-[var(--accent)] text-[var(--text-inverse)] 
                               rounded-full flex items-center justify-center
-                              font-bold text-xs mt-0.5"
-                >
+                              font-bold text-xs mt-0.5">
                   {index + 1}
                 </div>
-                <p className="text-gray-200 text-sm leading-relaxed">{item}</p>
+                <p className="text-[var(--text-secondary)] text-sm leading-relaxed">{item}</p>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-gray-500 text-center py-4">
-            No treatments available
-          </p>
+          <div className="text-center py-6">
+            <p className="text-[var(--text-muted)] text-sm">
+              No {activeTab} treatments provided by AI analysis.
+            </p>
+            <p className="text-[var(--text-muted)] text-xs mt-1">
+              Consult your local Krishi Vigyan Kendra (KVK) for guidance.
+            </p>
+          </div>
+        )}
+
+        {/* Dosage Section (only for chemical tab) */}
+        {activeTab === 'chemical' && dosageList.length > 0 && (
+          <div className="mt-4 pt-3 border-t border-[var(--border)]">
+            <p className="text-xs font-medium text-[var(--text-primary)] mb-2 flex items-center gap-1.5">
+              <span>💉</span> Dosage Instructions
+            </p>
+            <div className="space-y-2">
+              {dosageList.map((d, i) => (
+                <div key={i} className="bg-[var(--bg-elevated)] rounded-lg px-3 py-2">
+                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{d}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Spray Interval */}
+        {activeTab === 'chemical' && result.sprayInterval && result.sprayInterval.toUpperCase() !== 'N/A' && result.sprayInterval.toUpperCase() !== 'NONE' && (
+          <div className="mt-3 pt-3 border-t border-[var(--border)]">
+            <p className="text-xs text-[var(--text-muted)] mb-1 flex items-center gap-1.5">
+              <span>📅</span> Spray Interval
+            </p>
+            <p className="text-[var(--accent)] text-sm font-medium">{result.sprayInterval}</p>
+          </div>
         )}
 
         {/* Best Time to Treat */}
-        {result.bestTimeToTreat && (
-          <div className="mt-4 pt-3 border-t border-[var(--border)]">
-            <p className="text-xs text-gray-500 mb-1">🕐 Best time to treat</p>
-            <p className="text-accent text-sm font-medium">
-              {result.bestTimeToTreat}
+        {result.bestTimeToTreat && result.bestTimeToTreat.toUpperCase() !== 'N/A' && result.bestTimeToTreat.toUpperCase() !== 'NONE' && (
+          <div className="mt-3 pt-3 border-t border-[var(--border)]">
+            <p className="text-xs text-[var(--text-muted)] mb-1 flex items-center gap-1.5">
+              <span>🕐</span> Best Time to Treat
             </p>
+            <p className="text-[var(--accent)] text-sm font-medium">{result.bestTimeToTreat}</p>
           </div>
         )}
       </div>
@@ -201,20 +240,16 @@ export default function TreatmentTabs({ result, language, farmerId, token }) {
           className={`
             w-full mt-4 py-3.5 rounded-xl font-bold text-sm
             border transition-all duration-300
-            ${
-              planLoading
-                ? 'bg-[var(--bg-elevated)] border-[var(--border)] text-[var(--text-muted)] cursor-wait'
-                : 'bg-primary/20 border-accent/40 text-accent hover:bg-primary/30 hover:border-accent active:scale-[0.98]'
+            ${planLoading
+              ? 'bg-[var(--bg-elevated)] border-[var(--border)] text-[var(--text-muted)] cursor-wait'
+              : 'bg-[var(--accent-muted)] border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--primary)]/30 active:scale-[0.98]'
             }
           `}
         >
           {planLoading ? (
             <div className="flex items-center justify-center gap-2">
-              <div
-                className="loading-spinner"
-                style={{ width: 18, height: 18, borderWidth: 2 }}
-              ></div>
-              <span>KrishiGPT is creating your plan...</span>
+              <div className="loading-spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />
+              <span>Creating your treatment plan...</span>
             </div>
           ) : (
             '🤖 Generate 7-Day Treatment Plan'
@@ -224,43 +259,44 @@ export default function TreatmentTabs({ result, language, farmerId, token }) {
 
       {/* Treatment Plan Display */}
       {showPlan && planDays.length > 0 && (
-        <div
-          className="mt-4 bg-[var(--bg-elevated)] border border-emerald-500/20 
-                        rounded-2xl p-4 fade-in"
-        >
-          <h4 className="text-[var(--text-primary)] font-bold mb-3 flex items-center gap-2">
+        <div className="mt-4 bg-[var(--bg-elevated)] border border-[var(--accent)]/20 
+                        rounded-2xl p-4 fade-in">
+          <h4 className="text-[var(--text-primary)] font-bold mb-3 flex items-center gap-2 text-sm">
             <span>📋</span> 7-Day Treatment Plan
           </h4>
           <div className="space-y-2">
             {planDays.map((item, index) => (
               <div key={index}>
                 <button
-                  onClick={() =>
-                    setExpandedDay(expandedDay === index ? null : index)
-                  }
-                  className="w-full bg-primary/30 hover:bg-primary/40 
+                  onClick={() => setExpandedDay(expandedDay === index ? null : index)}
+                  className="w-full bg-[var(--accent-muted)] hover:bg-[var(--primary)]/20 
                              rounded-lg px-3 py-2.5 flex items-center 
                              justify-between transition-colors"
                 >
-                  <span className="text-accent font-semibold text-sm">
+                  <span className="text-[var(--accent)] font-semibold text-sm">
                     {item.day > 0 ? `Day ${item.day}` : `Step ${index + 1}`}
                   </span>
-                  <span className="text-gray-400 text-xs">
+                  <span className="text-[var(--text-muted)] text-xs">
                     {expandedDay === index ? '▲' : '▼'}
                   </span>
                 </button>
                 {expandedDay === index && (
-                  <div
-                    className="px-3 py-2 text-gray-300 text-sm 
-                                bg-[var(--bg-elevated)] rounded-b-lg border-x 
-                                border-b border-green-900/20 fade-in"
-                  >
+                  <div className="px-3 py-2.5 text-[var(--text-secondary)] text-sm 
+                                  bg-[var(--bg-card)] rounded-b-lg border-x 
+                                  border-b border-[var(--border)] fade-in leading-relaxed">
                     {item.action}
                   </div>
                 )}
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Plan error display */}
+      {showPlan && planDays.length === 0 && treatmentPlan && (
+        <div className="mt-4 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-2xl p-4 fade-in">
+          <p className="text-[var(--text-secondary)] text-sm leading-relaxed">{treatmentPlan}</p>
         </div>
       )}
     </div>

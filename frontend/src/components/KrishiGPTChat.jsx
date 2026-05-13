@@ -206,8 +206,11 @@ export default function KrishiGPTChat({
       } catch (err) {
         const errMsg = {
           role: 'ai',
-          text: 'Sorry, I am having trouble connecting to the AI service right now. Please try again in a moment.',
+          text: 'Sorry, I\'m having trouble connecting right now. Please try again.',
           timestamp: new Date(),
+          isError: true,
+          retryText: messageText,
+          retryImage: userMsg.image,
         }
         setMessages((prev) => [...prev, errMsg])
       } finally {
@@ -367,11 +370,19 @@ export default function KrishiGPTChat({
                 </div>
 
                 <div className="flex items-center gap-2 mt-1.5 px-1">
-                  <span className="text-[10px] text-emerald-900 font-bold">
+                  <span className="text-[10px] text-[var(--text-muted)] font-medium">
                     {formatTime(msg.timestamp)}
                   </span>
                   {msg.role === 'ai' && index > 0 && (
                     <SpeakerButton text={msg.text} language={language} />
+                  )}
+                  {msg.isError && msg.retryText && (
+                    <button
+                      onClick={() => handleSend(msg.retryText)}
+                      className="text-[10px] text-[var(--accent)] font-medium hover:underline"
+                    >
+                      Retry ↻
+                    </button>
                   )}
                 </div>
               </div>
@@ -380,34 +391,17 @@ export default function KrishiGPTChat({
 
           {isLoading && (
             <div className="flex justify-start items-end gap-2">
-              <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0 mb-1">
+              <div className="w-8 h-8 rounded-full bg-[var(--accent-muted)] border border-[var(--accent)]/20 flex items-center justify-center flex-shrink-0 mb-1">
                 <span className="text-xs">🤖</span>
               </div>
-              <div className="px-4 py-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border)] rounded-bl-none text-sm text-[var(--text-secondary)]">
-                KrishiGPT is typing...
-              </div>
-            </div>
-          )}
-
-          {isLoading && (
-            <div className="flex justify-start items-end gap-2">
-              <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0 mb-1 animate-bounce">
-                <span className="text-xs">🌾</span>
-              </div>
               <div className="bg-[var(--bg-card)] border border-[var(--border)] px-4 py-3 rounded-2xl rounded-bl-none shadow-sm">
-                <div className="flex gap-1">
-                  <div
-                    className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce"
-                    style={{ animationDelay: '0s' }}
-                  ></div>
-                  <div
-                    className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce"
-                    style={{ animationDelay: '0.2s' }}
-                  ></div>
-                  <div
-                    className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce"
-                    style={{ animationDelay: '0.4s' }}
-                  ></div>
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                    <div className="w-1.5 h-1.5 bg-[var(--accent)] rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                    <div className="w-1.5 h-1.5 bg-[var(--accent)] rounded-full animate-bounce" style={{ animationDelay: '0.15s' }}></div>
+                    <div className="w-1.5 h-1.5 bg-[var(--accent)] rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
+                  </div>
+                  <span className="text-xs text-[var(--text-muted)]">Analyzing...</span>
                 </div>
               </div>
             </div>
@@ -457,10 +451,24 @@ export default function KrishiGPTChat({
           <div className="flex items-center gap-2 bg-[#122a1b] border border-emerald-900/50 rounded-2xl p-1.5 focus-within:border-emerald-500/50 transition-all">
             <button
               onClick={() => fileInputRef.current.click()}
-              className="p-2.5 rounded-xl hover:bg-emerald-500/10 text-emerald-500/70 hover:text-emerald-500 transition-all"
-              title="Upload image"
+              className="p-2.5 rounded-xl hover:bg-[var(--accent-muted)] text-[var(--accent)]/60 hover:text-[var(--accent)] transition-all"
+              title="Upload from gallery"
             >
-              📷
+              🖼️
+            </button>
+            <button
+              onClick={() => {
+                const camInput = document.createElement('input')
+                camInput.type = 'file'
+                camInput.accept = 'image/*'
+                camInput.capture = 'environment'
+                camInput.onchange = handleImageSelect
+                camInput.click()
+              }}
+              className="p-2.5 rounded-xl hover:bg-[var(--accent-muted)] text-[var(--accent)]/60 hover:text-[var(--accent)] transition-all"
+              title="Take photo"
+            >
+              📸
             </button>
             <input
               type="file"
