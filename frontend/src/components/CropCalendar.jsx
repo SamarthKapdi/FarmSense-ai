@@ -59,16 +59,20 @@ export default function CropCalendar() {
 
       let calendarArray = []
       try {
-        const raw =
-          typeof data.calendar === 'string'
-            ? data.calendar
-            : JSON.stringify(data.calendar)
-        // Try to extract JSON array from the response
-        const match = raw.match(/\[[\s\S]*\]/)
-        if (match) {
-          calendarArray = JSON.parse(match[0])
+        let raw = typeof data.calendar === 'string' ? data.calendar : JSON.stringify(data.calendar)
+        // Remove markdown JSON code blocks if present
+        raw = raw.replace(/```json/gi, '').replace(/```/g, '').trim()
+        
+        const start = raw.indexOf('[')
+        const end = raw.lastIndexOf(']')
+        if (start !== -1 && end !== -1 && end > start) {
+          calendarArray = JSON.parse(raw.substring(start, end + 1))
+        } else {
+          // Attempt fallback parsing
+          calendarArray = JSON.parse(raw)
         }
-      } catch {
+      } catch (e) {
+        console.error("Calendar parsing failed:", e)
         // If parsing fails, show raw text
         calendarArray = []
       }

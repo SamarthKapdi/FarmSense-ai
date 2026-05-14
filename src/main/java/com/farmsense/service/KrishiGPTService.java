@@ -126,7 +126,8 @@ public class KrishiGPTService {
             userContext.append("FARMER's CURRENT QUESTION: ").append(safeQuestion);
 
             // ── Call Groq ──
-            return callGroq(systemPrompt, userContext.toString(), startedAt);
+            int maxTokens = safeQuestion.contains("month-by-month crop calendar") ? 2000 : 800;
+            return callGroq(systemPrompt, userContext.toString(), startedAt, maxTokens);
 
         } catch (Exception e) {
             long totalTime = System.currentTimeMillis() - startedAt;
@@ -210,6 +211,10 @@ public class KrishiGPTService {
     // ═════════════════════════════════════════════════════════════════════════════
 
     private String callGroq(String systemPrompt, String userMessage, long startedAt) throws Exception {
+        return callGroq(systemPrompt, userMessage, startedAt, 800);
+    }
+
+    private String callGroq(String systemPrompt, String userMessage, long startedAt, int maxTokens) throws Exception {
         Map<String, Object> requestBody = Map.of(
             "model", groqModel,
             "messages", List.of(
@@ -217,7 +222,7 @@ public class KrishiGPTService {
                 Map.of("role", "user", "content", userMessage)
             ),
             "temperature", 0.4,
-            "max_tokens", 400
+            "max_tokens", maxTokens
         );
 
         long apiCallStart = System.currentTimeMillis();
