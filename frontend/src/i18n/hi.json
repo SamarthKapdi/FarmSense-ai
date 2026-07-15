@@ -43,7 +43,9 @@
     "cloud": "बादल",
     "precipitation": "वर्षा",
     "feels_like": "अनुभव",
-    "sun_moon": "सूर्य और चंद्रमा"
+    "sun_moon": "सूर्य और चंद्रमा",
+    "hazardous": "खतरनाक",
+    "hazardous_advice": "घर के अंदर रहें और खिड़कियां बंद रखें।"
   },
   "market": {
     "title": "मंडी भाव",
@@ -55,7 +57,8 @@
     "market_name": "मंडी",
     "updated": "अंतिम अपडेट",
     "price_unit": "₹/क्विंटल",
-    "trend_title": "30 दिन का भाव रुझान"
+    "trend_title": "30 दिन का भाव रुझान",
+    "estimated_info": "APMC डेटा श्रेणियों पर आधारित अनुमानित कीमतें। API कुंजी के साथ लाइव data.gov.in एकीकरण उपलब्ध है।"
   },
   "chat": {
     "title": "कृषिGPT",
@@ -107,6 +110,7 @@
     "cancel": "रद्द करें",
     "delete": "हटाएं",
     "edit": "संपादित करें",
+    "more": "अधिक",
     "search": "खोजें",
     "filter": "फ़िल्टर",
     "no_data": "कोई डेटा उपलब्ध नहीं",
@@ -138,5 +142,10 @@
     "disease_alert": "रोग चेतावनी",
     "weather_alert": "मौसम चेतावनी",
     "advisory": "नई सलाह"
+  },
+  "analytics": {
+    "title": "रोग विश्लेषण",
+    "breakdown": "रोग विवरण",
+    "trends": "मासिक स्कैन रुझान"
   }
 }

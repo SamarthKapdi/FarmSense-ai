@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 import { apiUrl } from '../services/baseUrl'
 
 const STATES = [
@@ -46,6 +47,7 @@ const CROPS = [
 
 export default function MarketPrices() {
   const { token } = useAuth()
+  const { t } = useLanguage()
   const [selectedCrop, setSelectedCrop] = useState('Tomato')
   const [selectedState, setSelectedState] = useState('Maharashtra')
   const [prices, setPrices] = useState([])
@@ -108,7 +110,7 @@ export default function MarketPrices() {
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-xl font-bold">
           <span className="mr-2">🏪</span>
-          <span className="gradient-text">Mandi Prices</span>
+          <span className="gradient-text">{t('market.title')}</span>
         </h2>
         <div className="flex gap-1 bg-[var(--bg-elevated)] rounded-lg p-0.5 border border-[var(--border)]">
           <button
@@ -119,7 +121,7 @@ export default function MarketPrices() {
                 : 'text-[var(--text-secondary)]'
             }`}
           >
-            Table
+            {t('market.table')}
           </button>
           <button
             onClick={() => setActiveView('chart')}
@@ -129,7 +131,7 @@ export default function MarketPrices() {
                 : 'text-[var(--text-secondary)]'
             }`}
           >
-            Trend
+            {t('market.trend')}
           </button>
         </div>
       </div>
@@ -165,7 +167,7 @@ export default function MarketPrices() {
       {/* Source info */}
       {source && (
         <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg px-3 py-2 mb-4">
-          <p className="text-emerald-600 text-xs">ℹ️ {source}</p>
+          <p className="text-emerald-600 text-xs">ℹ️ {source.includes('Estimated') || source.includes('APMC') ? t('market.estimated_info') : source}</p>
         </div>
       )}
 
@@ -190,16 +192,16 @@ export default function MarketPrices() {
             <thead>
               <tr className="border-b border-[var(--border)] bg-[var(--bg-elevated)]">
                 <th className="text-left text-[var(--text-muted)] text-xs py-3 px-4 font-semibold">
-                  Market
+                  {t('market.market_name')}
                 </th>
                 <th className="text-right text-[var(--text-muted)] text-xs py-3 px-3 font-semibold">
-                  Min
+                  {t('market.min')}
                 </th>
                 <th className="text-right text-[var(--text-muted)] text-xs py-3 px-3 font-semibold">
-                  Max
+                  {t('market.max')}
                 </th>
                 <th className="text-right text-[var(--text-muted)] text-xs py-3 px-4 font-semibold">
-                  Modal
+                  {t('market.modal')}
                 </th>
               </tr>
             </thead>
@@ -227,7 +229,7 @@ export default function MarketPrices() {
           </table>
           <div className="px-4 py-2 border-t border-[var(--border)]">
             <p className="text-[var(--text-muted)] text-xs">
-              Updated: {prices[0]?.arrivalDate || 'Today'} • Prices in ₹/quintal
+              {t('market.updated')}: {prices[0]?.arrivalDate || 'Today'} • {t('market.price_unit')}
             </p>
           </div>
         </div>
@@ -237,7 +239,7 @@ export default function MarketPrices() {
       {!loading && activeView === 'chart' && (
         <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-xl p-4">
           <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-1">
-            {selectedCrop} — 30 Day Price Trend
+            {selectedCrop} — {t('market.trend_title')}
           </h3>
           <p className="text-xs text-[var(--text-muted)] mb-4">
             {selectedState}
@@ -288,7 +290,7 @@ export default function MarketPrices() {
             </ResponsiveContainer>
           ) : (
             <p className="text-center text-[var(--text-muted)] py-12">
-              No trend data available
+              {t('common.no_data')}
             </p>
           )}
         </div>
@@ -298,10 +300,10 @@ export default function MarketPrices() {
         <div className="flex flex-col items-center py-12 text-center">
           <div className="text-5xl mb-3">🏪</div>
           <h3 className="text-lg font-bold text-[var(--text-primary)] mb-1">
-            No price data
+            {t('common.no_data')}
           </h3>
           <p className="text-[var(--text-muted)] text-sm">
-            Select a crop and state to view prices
+            {t('common.no_data')}
           </p>
         </div>
       )}

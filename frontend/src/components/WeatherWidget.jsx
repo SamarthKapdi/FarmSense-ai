@@ -18,7 +18,10 @@ function RecenterMap({ lat, lng }) {
     return null;
 }
 
+import { useLanguage } from "../context/LanguageContext";
+
 export default function WeatherWidget() {
+    const { t } = useLanguage();
     // State
     const [coords, setCoords] = useState(() => {
         const saved = localStorage.getItem('farmsense_weather_location');
@@ -152,7 +155,7 @@ export default function WeatherWidget() {
                     <div className="flex gap-2">
                         <input
                             type="text"
-                            placeholder="Search city..."
+                            placeholder={t('weather.search')}
                             className="w-full bg-[var(--bg-card)] border-[var(--border)] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                             value={search}
                             onChange={(e) => handleSearch(e.target.value)}
@@ -182,7 +185,7 @@ export default function WeatherWidget() {
                 {/* Interactive Map */}
                 <div className="lg:col-span-3 bg-[var(--bg-card)] rounded-3xl overflow-hidden border border-[var(--border)] shadow-xl">
                     <div className="flex justify-between items-center p-6 pb-0">
-                        <h3 className="font-bold text-lg text-emerald-500">📍 Location Map</h3>
+                        <h3 className="font-bold text-lg text-emerald-500">📍 {t('weather.map')}</h3>
                         <span className="text-xs text-[var(--text-muted)]">{coords.lat.toFixed(4)}, {coords.lon.toFixed(4)}</span>
                     </div>
                     <div className="h-[300px] m-4 rounded-2xl overflow-hidden border border-[var(--border)]">
@@ -205,7 +208,7 @@ export default function WeatherWidget() {
             {error && (
                 <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl text-center">
                     <p className="text-red-400 text-sm">⚠️ {error}</p>
-                    <button onClick={() => fetchAllData(coords.lat, coords.lon)} className="mt-2 text-xs font-bold text-red-300 underline underline-offset-4">Retry</button>
+                    <button onClick={() => fetchAllData(coords.lat, coords.lon)} className="mt-2 text-xs font-bold text-red-300 underline underline-offset-4">{t('common.retry')}</button>
                 </div>
             )}
 
@@ -230,12 +233,12 @@ export default function WeatherWidget() {
                         <h2 className="text-2xl font-bold text-emerald-400 mb-6">{current?.weatherDescription}</h2>
 
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-4 border-t border-emerald-900/20 pt-6">
-                            <DetailItem icon="💨" label="Wind" value={`${current?.windSpeed} km/h`} subValue={`Direction: ${current?.windDirection}°`} />
-                            <DetailItem icon="💧" label="Humidity" value={`${current?.humidity}%`} />
-                            <DetailItem icon="☀️" label="UV Index" value={current?.uvIndex} />
-                            <DetailItem icon="🌡️" label="Pressure" value={`${current?.pressure} hPa`} />
-                            <DetailItem icon="☁️" label="Cloud Cover" value={`${current?.cloudCover}%`} />
-                            <DetailItem icon="☔" label="Precipitation" value={`${current?.precipitation} mm`} />
+                            <DetailItem icon="💨" label={t('weather.wind')} value={`${current?.windSpeed} km/h`} subValue={`Direction: ${current?.windDirection}°`} />
+                            <DetailItem icon="💧" label={t('weather.humidity')} value={`${current?.humidity}%`} />
+                            <DetailItem icon="☀️" label={t('weather.uv')} value={current?.uvIndex} />
+                            <DetailItem icon="🌡️" label={t('weather.pressure')} value={`${current?.pressure} hPa`} />
+                            <DetailItem icon="☁️" label={t('weather.cloud')} value={`${current?.cloudCover}%`} />
+                            <DetailItem icon="☔" label={t('weather.precipitation')} value={`${current?.precipitation} mm`} />
                         </div>
                     </div>
                 </div>
@@ -243,7 +246,7 @@ export default function WeatherWidget() {
                 {/* Air Quality Card */}
                 <div className="bg-[var(--bg-card)] rounded-3xl p-8 border border-emerald-900/30 shadow-xl">
                     <div className="flex justify-between items-center mb-6">
-                        <h3 className="font-bold text-lg text-emerald-400">Air Quality</h3>
+                        <h3 className="font-bold text-lg text-emerald-400">{t('weather.aqi')}</h3>
                         <span className="text-2xl">🌫️</span>
                     </div>
 
@@ -269,7 +272,7 @@ export default function WeatherWidget() {
                 {/* Hourly Forecast */}
                 <div className="lg:col-span-3 bg-[var(--bg-card)] rounded-3xl p-6 border border-emerald-900/30 shadow-xl overflow-hidden">
                     <div className="flex justify-between items-center mb-6 px-2">
-                        <h3 className="font-bold text-lg text-emerald-400">Hourly Forecast</h3>
+                        <h3 className="font-bold text-lg text-emerald-400">{t('weather.hourly')}</h3>
                         <span className="text-xs text-emerald-600/50">Next 24 Hours</span>
                     </div>
                     
@@ -291,7 +294,7 @@ export default function WeatherWidget() {
                 {/* 10-Day Forecast */}
                 <div className="lg:col-span-2 bg-[var(--bg-card)] rounded-3xl p-8 border border-emerald-900/30 shadow-xl">
                     <div className="flex justify-between items-center mb-8">
-                        <h3 className="font-bold text-lg text-emerald-400">10-Day Forecast</h3>
+                        <h3 className="font-bold text-lg text-emerald-400">{t('weather.daily')}</h3>
                         <span className="text-2xl">📅</span>
                     </div>
 
@@ -320,20 +323,20 @@ export default function WeatherWidget() {
                 {/* Sun & Moon Card */}
                 <div className="bg-[var(--bg-card)] rounded-3xl p-8 border border-emerald-900/30 shadow-xl space-y-8">
                     <div>
-                        <h3 className="font-bold text-lg text-emerald-400 mb-6">Sun & Moon</h3>
+                        <h3 className="font-bold text-lg text-emerald-400 mb-6">{t('weather.sun_moon')}</h3>
                         <div className="space-y-6">
                             <div className="flex items-center justify-between border-b border-emerald-900/20 pb-4">
                                 <div className="flex items-center gap-4">
                                     <span className="text-2xl text-orange-400">🌅</span>
                                     <div>
-                                        <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">Sunrise</div>
+                                        <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">{t('weather.sunrise')}</div>
                                         <div className="text-lg font-black">{daily[0]?.sunrise ? new Date(daily[0].sunrise).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}</div>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4 text-right">
                                     <div className="order-2 text-2xl text-orange-600">🌇</div>
                                     <div className="order-1">
-                                        <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">Sunset</div>
+                                        <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">{t('weather.sunset')}</div>
                                         <div className="text-lg font-black">{daily[0]?.sunset ? new Date(daily[0].sunset).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}</div>
                                     </div>
                                 </div>

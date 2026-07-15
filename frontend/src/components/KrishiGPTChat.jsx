@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
-import LanguageSelector from './LanguageSelector'
+import { useLanguage } from '../context/LanguageContext'
 import { askKrishiGPT } from '../services/api'
 
 const CROPS = [
@@ -25,6 +25,10 @@ const LANG_LOCALE_MAP = {
   te: 'te-IN',
   mr: 'mr-IN',
   pa: 'pa-IN',
+  gu: 'gu-IN',
+  kn: 'kn-IN',
+  bn: 'bn-IN',
+  ml: 'ml-IN',
 }
 
 const QUICK_QUESTIONS = {
@@ -42,7 +46,62 @@ const QUICK_QUESTIONS = {
     'इलाज का खर्चा? 💰',
     'स्प्रे कब करें? 📅',
   ],
-  // ... adding more as needed
+  mr: [
+    'कोणते कीटकनाशक वापरावे? 🧪',
+    'हा रोग पसरत आहे का? 🔴',
+    'सेंद्रिय उपाय? 🌿',
+    'उपचाराचा खर्च? 💰',
+    'फवारणी कधी करावी? 📅',
+  ],
+  ta: [
+    'என்ன பூச்சிக்கொல்லி பயன்படுத்தலாம்? 🧪',
+    'இது பரவுகிறதா? 🔴',
+    'இயற்கை தீர்வு? 🌿',
+    'சிகிச்சை செலவு? 💰',
+    'எப்போது தெளிக்க வேண்டும்? 📅',
+  ],
+  te: [
+    'ఏ పురుగుమందు వాడాలి? 🧪',
+    'ఇది వ్యాపిస్తోందా? 🔴',
+    'సహజ పరిష్కారం? 🌿',
+    'చికిత్స ఖర్చు? 💰',
+    'ఎప్పుడు పిచికారీ చేయాలి? 📅',
+  ],
+  kn: [
+    'ಯಾವ ಕೀಟನಾಶಕ ಬಳಸಬೇಕು? 🧪',
+    'ಇದು ಹರಡುತ್ತಿದೆಯೇ? 🔴',
+    'ಸಾವಯವ ಪರಿಹಾರ? 🌿',
+    'ಚಿಕಿತ್ಸೆಯ ವೆಚ್ಚ? 💰',
+    'ಯಾವಾಗ ಸಿಂಪಡಿಸಬೇಕು? 📅',
+  ],
+  gu: [
+    'કઈ જંતુનાશક દવા વાપરવી? 🧪',
+    'શું તે ફેલાઈ રહ્યો છે? 🔴',
+    'જૈવિક ઉપાય? 🌿',
+    'સારવારનો ખર્ચ? 💰',
+    'ક્યારે છંટકાવ કરવો? 📅',
+  ],
+  pa: [
+    'ਕਿਹੜਾ ਕੀਟਨਾਸ਼ਕ ਵਰਤਣਾ ਹੈ? 🧪',
+    'ਕੀ ਇਹ ਫੈਲ ਰਿਹਾ ਹੈ? 🔴',
+    'ਜੈਵਿਕ ਹੱਲ? 🌿',
+    'ਇਲਾਜ ਦਾ ਖਰਚਾ? 💰',
+    'ਕਦੋਂ ਸਪਰੇਅ ਕਰਨੀ ਹੈ? 📅',
+  ],
+  bn: [
+    'কোন কীটনাশক ব্যবহার করব? 🧪',
+    'এটি কি ছড়িয়ে পড়ছে? 🔴',
+    'জৈব সমাধান? 🌿',
+    'চিকিৎসার খরচ? 💰',
+    'কখন স্প্রে করবেন? 📅',
+  ],
+  ml: [
+    'ഏത് കീടനാശിനി ഉപയോഗിക്കണം? 🧪',
+    'ഇത് പടരുകയാണോ? 🔴',
+    'ജൈവ പരിഹാരം? 🌿',
+    'ചികിത്സാ ചെലവ്? 💰',
+    'എപ്പോഴാണ് സ്പ്രേ ചെയ്യേണ്ടത്? 📅',
+  ],
 }
 
 const WELCOME_MESSAGES = {
@@ -52,6 +111,10 @@ const WELCOME_MESSAGES = {
   te: 'నమస్కారం! 🙏 నేను కృషిGPT, మీ AI వ్యవసాయ సహాయకుడు। పంట వ్యాధుల గురించి అడగండి!',
   mr: 'नमस्कार! 🙏 मी कृषिGPT, तुमचा AI शेती सहाय्यक. पीक रोगांबद्दल काहीही विचारा!',
   pa: 'ਸਤ ਸ੍ਰੀ ਅਕਾਲ! 🙏 ਮੈਂ ਕ੍ਰਿਸ਼ੀGPT ਹਾਂ, ਤੁਹਾਡਾ AI ਖੇਤੀ ਸਹਾਇਕ। ਫਸਲ ਰੋਗਾਂ ਬਾਰੇ ਪੁੱਛੋ!',
+  kn: 'ನಮಸ್ಕಾರ! 🙏 ನಾನು ಕೃಷಿGPT, ನಿಮ್ಮ AI ಕೃಷಿ ಸಹಾಯಕ. ಬೆಳೆ ರೋಗಗಳು ಮತ್ತು ಚಿಕಿತ್ಸೆಗಳ ಬಗ್ಗೆ ಕೇಳಿ!',
+  gu: 'નમસ્કાર! 🙏 હું કૃષિGPT છું, તમારો AI કૃષિ સહાયક. પાકના રોગો અને ઉપચાર વિશે કંઈપણ પૂછો!',
+  bn: 'নমস্কার! 🙏 আমি কৃষিGPT, আপনার AI কৃষি সহকারী। ফসল রোগ এবং চিকিৎসা সম্পর্কে যেকোনো প্রশ্ন করুন!',
+  ml: 'നമസ്കാരം! 🙏 ഞാൻ കൃഷിGPT, നിങ്ങളുടെ AI കാർഷിക സഹായി. വിള രോഗങ്ങളെക്കുറിച്ചോ ചികിത്സയെക്കുറിച്ചോ ചോദിക്കൂ!',
 }
 
 // ── TTS Speaker Button ───────────────────────────────
@@ -105,15 +168,18 @@ function SpeakerButton({ text, language }) {
 }
 
 export default function KrishiGPTChat({
-  language,
+  language: propLanguage,
   farmerId,
   token,
   onLanguageChange,
 }) {
+  const { language: contextLanguage, t } = useLanguage()
+  const language = propLanguage || contextLanguage || 'en'
+
   const [messages, setMessages] = useState([
     {
       role: 'ai',
-      text: WELCOME_MESSAGES[language] || WELCOME_MESSAGES.en,
+      text: WELCOME_MESSAGES[language] || t('chat.welcome') || WELCOME_MESSAGES.en,
       timestamp: new Date(),
     },
   ])
@@ -141,14 +207,19 @@ export default function KrishiGPTChat({
   }, [messages, isLoading])
 
   useEffect(() => {
-    setMessages([
-      {
-        role: 'ai',
-        text: WELCOME_MESSAGES[language] || WELCOME_MESSAGES.en,
-        timestamp: new Date(),
-      },
-    ])
-  }, [language])
+    setMessages((prev) => {
+      if (prev.length === 1 && prev[0].role === 'ai') {
+        return [
+          {
+            role: 'ai',
+            text: WELCOME_MESSAGES[language] || t('chat.welcome') || WELCOME_MESSAGES.en,
+            timestamp: new Date(),
+          },
+        ]
+      }
+      return prev
+    })
+  }, [language, t])
 
   const handleImageSelect = (e) => {
     const file = e.target.files[0]
@@ -169,7 +240,7 @@ export default function KrishiGPTChat({
 
       const userMsg = {
         role: 'user',
-        text: messageText || (selectedImage ? 'Analyzed image' : ''),
+        text: messageText || (selectedImage ? t('disease.detected') : ''),
         image: selectedImage,
         timestamp: new Date(),
       }
@@ -206,7 +277,7 @@ export default function KrishiGPTChat({
       } catch (err) {
         const errMsg = {
           role: 'ai',
-          text: 'Sorry, I\'m having trouble connecting right now. Please try again.',
+          text: t('common.error'),
           timestamp: new Date(),
           isError: true,
           retryText: messageText,
@@ -295,10 +366,10 @@ export default function KrishiGPTChat({
             </div>
             <div>
               <h2 className="text-lg font-bold text-emerald-400 leading-none">
-                KrishiGPT
+                {t('chat.title')}
               </h2>
               <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest mt-1">
-                AI Farming Expert
+                {t('chat.subtitle')}
               </p>
             </div>
           </div>
@@ -381,7 +452,7 @@ export default function KrishiGPTChat({
                       onClick={() => handleSend(msg.retryText)}
                       className="text-[10px] text-[var(--accent)] font-medium hover:underline"
                     >
-                      Retry ↻
+                      {t('common.retry')} ↻
                     </button>
                   )}
                 </div>
@@ -401,7 +472,7 @@ export default function KrishiGPTChat({
                     <div className="w-1.5 h-1.5 bg-[var(--accent)] rounded-full animate-bounce" style={{ animationDelay: '0.15s' }}></div>
                     <div className="w-1.5 h-1.5 bg-[var(--accent)] rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
                   </div>
-                  <span className="text-xs text-[var(--text-muted)]">Analyzing...</span>
+                  <span className="text-xs text-[var(--text-muted)]">{t('chat.thinking')}</span>
                 </div>
               </div>
             </div>
@@ -483,11 +554,7 @@ export default function KrishiGPTChat({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={
-                language === 'hi'
-                  ? 'अपना सवाल पूछें...'
-                  : 'Ask KrishiGPT anything...'
-              }
+              placeholder={t('chat.placeholder')}
               disabled={isLoading}
               className="flex-1 bg-transparent border-none focus:ring-0 text-sm text-emerald-50 placeholder-emerald-900/50 px-2"
             />

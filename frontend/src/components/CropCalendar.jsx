@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 import { apiUrl } from '../services/baseUrl'
 
 const CROPS = [
@@ -39,6 +40,7 @@ function getMonthColor(activities) {
 
 export default function CropCalendar() {
   const { token } = useAuth()
+  const { language, t } = useLanguage()
   const [selectedCrop, setSelectedCrop] = useState('Tomato')
   const [calendar, setCalendar] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -49,7 +51,7 @@ export default function CropCalendar() {
     setError(null)
     try {
       const response = await fetch(
-        apiUrl(`/farm/calendar/${encodeURIComponent(crop)}`),
+        apiUrl(`/farm/calendar/${encodeURIComponent(crop)}?lang=${encodeURIComponent(language)}`),
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -98,7 +100,7 @@ export default function CropCalendar() {
     <div className="px-4 pt-6 pb-4 max-w-lg mx-auto fade-in">
       <h2 className="text-xl font-bold mb-5">
         <span className="mr-2">📅</span>
-        <span className="gradient-text">Crop Calendar</span>
+        <span className="gradient-text">{t('calendar.title')}</span>
       </h2>
 
       {/* Crop Selector */}
@@ -134,10 +136,10 @@ export default function CropCalendar() {
               className="loading-spinner"
               style={{ width: 18, height: 18, borderWidth: 2 }}
             ></div>
-            <span>Generating calendar...</span>
+            <span>{t('common.loading')}</span>
           </div>
         ) : (
-          '📅 Generate Crop Calendar'
+          `📅 ${t('calendar.generate')}`
         )}
       </button>
 
@@ -157,21 +159,21 @@ export default function CropCalendar() {
                 className="w-2.5 h-2.5 rounded-full"
                 style={{ background: MONTH_COLORS.sowing }}
               ></span>{' '}
-              Sowing
+              {t('calendar.sowing')}
             </span>
             <span className="flex items-center gap-1.5 font-medium">
               <span
                 className="w-2.5 h-2.5 rounded-full"
                 style={{ background: MONTH_COLORS.growing }}
               ></span>{' '}
-              Growing
+              {t('calendar.irrigation')}
             </span>
             <span className="flex items-center gap-1.5 font-medium">
               <span
                 className="w-2.5 h-2.5 rounded-full"
                 style={{ background: MONTH_COLORS.harvesting }}
               ></span>{' '}
-              Harvest
+              {t('calendar.harvest')}
             </span>
           </div>
 

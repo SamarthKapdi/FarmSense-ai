@@ -12,6 +12,7 @@ import {
   Legend,
 } from 'recharts'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 import { apiUrl } from '../services/baseUrl'
 
 const COLORS = [
@@ -32,6 +33,7 @@ const SEVERITY_COLORS = {
 
 export default function AnalyticsCharts() {
   const { token } = useAuth()
+  const { t } = useLanguage()
   const [diseaseData, setDiseaseData] = useState([])
   const [monthlyData, setMonthlyData] = useState([])
   const [cropData, setCropData] = useState([])
@@ -92,10 +94,10 @@ export default function AnalyticsCharts() {
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <div className="text-5xl mb-3">📊</div>
         <h3 className="text-lg font-bold text-[var(--text-primary)] mb-1">
-          No analytics yet
+          {t('common.no_data')}
         </h3>
         <p className="text-gray-500 text-sm">
-          Upload crop photos to start building your disease analytics
+          {t('common.no_data')}
         </p>
       </div>
     )
@@ -121,14 +123,14 @@ export default function AnalyticsCharts() {
     <div className="space-y-6 p-4 max-w-lg mx-auto">
       <h3 className="text-lg font-bold">
         <span className="mr-2">📊</span>
-        <span className="gradient-text">Disease Analytics</span>
+        <span className="gradient-text">{t('analytics.title')}</span>
       </h3>
 
       {/* Disease Breakdown Pie */}
       {diseaseData.length > 0 && (
         <div className="disease-card">
           <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-3">
-            🦠 Disease Breakdown
+            🦠 {t('analytics.breakdown')}
           </h4>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
@@ -161,7 +163,7 @@ export default function AnalyticsCharts() {
       {monthlyData.length > 0 && (
         <div className="disease-card">
           <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-3">
-            📈 Monthly Scan Trends
+            📈 {t('analytics.trends')}
           </h4>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={monthlyData}>
@@ -187,7 +189,7 @@ export default function AnalyticsCharts() {
       {cropData.length > 0 && (
         <div className="disease-card">
           <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-3">
-            🌾 Crop Distribution
+            🌾 {t('upload.select_crop')}
           </h4>
           <div className="space-y-2">
             {cropData.map((item, i) => (
@@ -217,7 +219,7 @@ export default function AnalyticsCharts() {
       {severityPieData.length > 0 && (
         <div className="disease-card">
           <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-3">
-            ⚠️ Severity Summary
+            ⚠️ {t('disease.severity')}
           </h4>
           <ResponsiveContainer width="100%" height={180}>
             <PieChart>

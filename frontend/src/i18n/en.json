@@ -46,7 +46,9 @@
     "cloud": "Cloud Cover",
     "precipitation": "Precipitation",
     "feels_like": "Feels Like",
-    "sun_moon": "Sun & Moon"
+    "sun_moon": "Sun & Moon",
+    "hazardous": "Hazardous",
+    "hazardous_advice": "Stay indoors and keep windows closed."
   },
   "market": {
     "title": "Mandi Prices",
@@ -58,7 +60,8 @@
     "market_name": "Market",
     "updated": "Last updated",
     "price_unit": "₹/quintal",
-    "trend_title": "30 Day Price Trend"
+    "trend_title": "30 Day Price Trend",
+    "estimated_info": "Estimated prices based on APMC data ranges. Live data.gov.in integration available with API key."
   },
   "chat": {
     "title": "KrishiGPT",
@@ -142,5 +145,10 @@
     "disease_alert": "Disease Alert",
     "weather_alert": "Weather Alert",
     "advisory": "New Advisory"
+  },
+  "analytics": {
+    "title": "Disease Analytics",
+    "breakdown": "Disease Breakdown",
+    "trends": "Monthly Scan Trends"
   }
 }

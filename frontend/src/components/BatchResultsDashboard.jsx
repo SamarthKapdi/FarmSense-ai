@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import ResultsDashboard from './ResultsDashboard'
+import { useLanguage } from '../context/LanguageContext'
 
 export default function BatchResultsDashboard({
   results,
@@ -8,6 +9,7 @@ export default function BatchResultsDashboard({
   token,
   onBack,
 }) {
+  const { t } = useLanguage()
   const [expandedIndex, setExpandedIndex] = useState(null)
 
   if (expandedIndex !== null) {
@@ -37,12 +39,12 @@ export default function BatchResultsDashboard({
         className="flex items-center gap-2 text-accent mb-4 hover:text-muted transition-colors"
       >
         <span className="text-lg">←</span>
-        <span className="text-sm font-medium">Back to Scan</span>
+        <span className="text-sm font-medium">{t('common.back') || 'Back to Scan'}</span>
       </button>
 
       <h2 className="text-xl font-bold mb-4">
         <span className="mr-2">🌾</span>
-        <span className="gradient-text">Batch Scan Results ({results.length})</span>
+        <span className="gradient-text">{t('results.batch') || 'Batch Scan Results'} ({results.length})</span>
       </h2>
 
       <div className="space-y-4">
@@ -56,24 +58,24 @@ export default function BatchResultsDashboard({
               <div>
                 <h3 className="font-bold text-lg mb-1">{res.cropName || 'Crop'}</h3>
                 {res.isHealthy ? (
-                  <p className="text-green-400 font-medium text-sm">✅ Healthy</p>
+                  <p className="text-green-400 font-medium text-sm">✅ {t('disease.healthy') || 'Healthy'}</p>
                 ) : (
                   <div>
                     <p className="text-red-400 font-medium text-sm">⚠️ {res.diseaseName}</p>
                     <p className={`text-xs mt-1 ${getSeverityClass(res.severity)}`}>
-                      Severity: {res.severity}
+                      {t('disease.severity') || 'Severity'}: {res.severity}
                     </p>
                   </div>
                 )}
               </div>
               <div className="text-right">
                 <div className="text-accent font-bold">{res.confidence}%</div>
-                <div className="text-[10px] text-gray-500 uppercase mt-1">Confidence</div>
+                <div className="text-[10px] text-gray-500 uppercase mt-1">{t('disease.confidence') || 'Confidence'}</div>
               </div>
             </div>
             
             <button className="mt-3 w-full py-2 bg-[var(--bg-elevated)] rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:text-emerald-500 transition-colors">
-              View Treatment Plan →
+              {t('disease.treatment') || 'View Treatment Plan'} →
             </button>
           </div>
         ))}

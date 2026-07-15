@@ -272,7 +272,7 @@ export default function ImageUploader({ language, farmerId, token, onResult }) {
                        text-[var(--text-secondary)] text-sm font-medium
                        hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all"
           >
-            <span>📸</span> Camera
+            <span>📸</span> {t('upload.camera') || 'Camera'}
           </button>
           <button
             onClick={() => setCaptureMode(prev => prev === 'environment' ? 'user' : 'environment')}
@@ -290,7 +290,7 @@ export default function ImageUploader({ language, farmerId, token, onResult }) {
                      text-[var(--text-secondary)] text-sm font-medium
                      hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all"
         >
-          <span>🖼️</span> Gallery
+          <span>🖼️</span> {t('upload.gallery') || 'Gallery'}
         </button>
       </div>
       {/* Hidden camera input — dynamically flips based on captureMode */}
@@ -355,7 +355,7 @@ export default function ImageUploader({ language, farmerId, token, onResult }) {
                 onClick={handleSubmit}
                 className="text-xs text-[var(--accent)] font-medium mt-2 hover:underline"
               >
-                Try again →
+                {t('common.retry') || 'Try again'} →
               </button>
             </div>
           </div>
@@ -370,10 +370,10 @@ export default function ImageUploader({ language, farmerId, token, onResult }) {
             <div className="text-6xl leaf-pulse">🌿</div>
             <p className="text-[var(--accent)] font-semibold text-lg text-center">
               {uploadPhase === 'optimizing'
-                ? 'Optimizing image...'
+                ? (t('upload.optimizing') || 'Optimizing image...')
                 : uploadPhase === 'uploading'
-                  ? `Uploading... ${uploadProgress}%`
-                  : 'AI analyzing your crop...'}
+                  ? `${t('upload.uploading') || 'Uploading...'} ${uploadProgress}%`
+                  : (t('upload.analyzing') || 'AI analyzing your crop...')}
             </p>
             {/* Progress Bar */}
             <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
@@ -389,10 +389,10 @@ export default function ImageUploader({ language, farmerId, token, onResult }) {
             </div>
             <p className="text-[var(--text-muted)] text-xs text-center">
               {uploadPhase === 'optimizing'
-                ? 'Preparing image for AI analysis'
+                ? (t('upload.preparing') || 'Preparing image for AI analysis')
                 : uploadPhase === 'uploading'
-                  ? 'Sending to FarmSense AI server'
-                  : 'Gemini Vision is analyzing disease patterns...'}
+                  ? (t('upload.sending') || 'Sending to FarmSense AI server')
+                  : (t('upload.vision_analyzing') || 'Gemini Vision is analyzing disease patterns...')}
             </p>
           </div>
         </div>

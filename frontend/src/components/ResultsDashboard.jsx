@@ -1,5 +1,6 @@
 import React from 'react'
 import TreatmentTabs from './TreatmentTabs'
+import { useLanguage } from '../context/LanguageContext'
 
 export default function ResultsDashboard({
   result,
@@ -8,6 +9,7 @@ export default function ResultsDashboard({
   token,
   onBack,
 }) {
+  const { t } = useLanguage()
   const symptoms = Array.isArray(result.symptoms) ? result.symptoms : []
   const envCauses = Array.isArray(result.environmentalCauses) ? result.environmentalCauses : []
   const diffDiag = Array.isArray(result.differentialDiagnosis) 
@@ -62,7 +64,7 @@ export default function ResultsDashboard({
                    hover:text-[var(--text-muted)] transition-colors"
       >
         <span className="text-lg">←</span>
-        <span className="text-sm font-medium">New Scan</span>
+        <span className="text-sm font-medium">{t('results.new_scan') || 'New Scan'}</span>
       </button>
 
       {/* ═══ HEALTHY BANNER ═══ */}
@@ -160,9 +162,9 @@ export default function ResultsDashboard({
             </div>
           </div>
           <div className="flex-1">
-            <p className="text-[var(--text-muted)] text-xs mb-1">AI Confidence</p>
+            <p className="text-[var(--text-muted)] text-xs mb-1">{t('disease.confidence') || 'AI Confidence'}</p>
             <p className="text-[var(--text-primary)] font-semibold text-sm">
-              {result.confidence >= 70 ? 'High Confidence' : result.confidence >= 40 ? 'Moderate Confidence' : 'Low Confidence'}
+              {result.confidence >= 70 ? (t('disease.high_confidence') || 'High Confidence') : result.confidence >= 40 ? (t('disease.mod_confidence') || 'Moderate Confidence') : (t('disease.low_confidence') || 'Low Confidence')}
             </p>
             {result.confidenceReasoning && (
               <p className="text-[var(--text-muted)] text-xs mt-2 leading-relaxed">
@@ -205,7 +207,7 @@ export default function ResultsDashboard({
             <p className="text-[var(--danger)] text-2xl font-extrabold">
               {result.yieldLossEstimate || 'N/A'}
             </p>
-            <p className="text-[var(--text-muted)] text-xs mt-1">Yield loss</p>
+            <p className="text-[var(--text-muted)] text-xs mt-1">{t('results.yield_loss') || 'Yield loss'}</p>
             {result.yieldLossReasoning && (
               <p className="text-[var(--text-muted)] text-[10px] mt-1.5 leading-relaxed">
                 {result.yieldLossReasoning}
@@ -216,7 +218,7 @@ export default function ResultsDashboard({
             <p className="text-[var(--warning)] text-lg font-bold">
               {result.estimatedRecoveryCost || 'N/A'}
             </p>
-            <p className="text-[var(--text-muted)] text-xs mt-1">Recovery cost</p>
+            <p className="text-[var(--text-muted)] text-xs mt-1">{t('results.recovery_cost') || 'Recovery cost'}</p>
             {result.bestTimeToTreat && (
               <p className="text-[var(--text-muted)] text-[10px] mt-1.5">
                 🕐 {result.bestTimeToTreat}
@@ -230,7 +232,7 @@ export default function ResultsDashboard({
       {symptoms.length > 0 && (
         <div className="disease-card fade-in fade-in-delay-4">
           <h4 className="text-[var(--text-primary)] font-bold mb-3 flex items-center gap-2 text-sm">
-            <span>🔍</span> Symptoms Identified
+            <span>🔍</span> {t('disease.symptoms') || 'Symptoms Identified'}
           </h4>
           <div className="space-y-2.5">
             {symptoms.map((symptom, index) => (
@@ -252,7 +254,7 @@ export default function ResultsDashboard({
       {envCauses.length > 0 && (
         <div className="disease-card fade-in">
           <h4 className="text-[var(--text-primary)] font-bold mb-3 flex items-center gap-2 text-sm">
-            <span>🌍</span> Environmental Factors
+            <span>🌍</span> {t('disease.env_factors') || 'Environmental Factors'}
           </h4>
           <div className="flex flex-wrap gap-2">
             {envCauses.map((cause, i) => (
@@ -277,7 +279,7 @@ export default function ResultsDashboard({
       {!result.isHealthy && (result.monitoringAdvice || result.wateringAdvice || result.fertilizerAdvice || result.weatherImpact || result.soilImpact) && (
         <div className="disease-card fade-in">
           <h4 className="text-[var(--text-primary)] font-bold mb-3 flex items-center gap-2 text-sm">
-            <span>📋</span> Farm Management
+            <span>📋</span> {t('disease.farm_mgmt') || 'Farm Management'}
           </h4>
           <div className="space-y-3">
             {result.monitoringAdvice && result.monitoringAdvice.toUpperCase() !== 'N/A' && result.monitoringAdvice.toUpperCase() !== 'NONE' && (
@@ -333,7 +335,7 @@ export default function ResultsDashboard({
       {diffDiag.length > 0 && (
         <div className="disease-card fade-in">
           <h4 className="text-[var(--text-primary)] font-bold mb-3 flex items-center gap-2 text-sm">
-            <span>🔬</span> Differential Diagnosis
+            <span>🔬</span> {t('disease.diff_diag') || 'Differential Diagnosis'}
           </h4>
           <p className="text-xs text-[var(--text-muted)] mb-2">
             Other conditions this could be confused with:

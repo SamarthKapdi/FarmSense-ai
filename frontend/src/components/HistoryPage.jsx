@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react'
+import { useLanguage } from '../context/LanguageContext'
 import { getHistory, getBookmarkedHistory, toggleBookmark, downloadReportPdf } from '../services/api'
 
 export default function HistoryPage({ farmerId, language, token }) {
+  const { t } = useLanguage()
   const [history, setHistory] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -92,7 +94,7 @@ export default function HistoryPage({ farmerId, language, token }) {
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-xl font-bold">
           <span className="mr-2">📋</span>
-          <span className="gradient-text">Scan History</span>
+          <span className="gradient-text">{t('history.title') || 'Scan History'}</span>
         </h2>
 
         {/* Bookmark Filter */}
@@ -106,7 +108,7 @@ export default function HistoryPage({ farmerId, language, token }) {
             }`}
         >
           <span>{showBookmarkedOnly ? '★' : '☆'}</span>
-          {showBookmarkedOnly ? 'Bookmarked' : 'All Scans'}
+          {showBookmarkedOnly ? (t('history.bookmarked') || 'Bookmarked') : (t('history.all_scans') || 'All Scans')}
         </button>
       </div>
 
@@ -137,12 +139,12 @@ export default function HistoryPage({ farmerId, language, token }) {
         >
           <div className="text-6xl mb-4 leaf-pulse">🌾</div>
           <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">
-            {showBookmarkedOnly ? 'No bookmarked scans' : 'No scans yet!'}
+            {showBookmarkedOnly ? (t('history.no_bookmarked') || 'No bookmarked scans') : (t('history.no_scans') || 'No scans yet!')}
           </h3>
           <p className="text-gray-400 text-sm max-w-xs">
             {showBookmarkedOnly
               ? 'Bookmark scans you want to revisit later'
-              : 'Upload your first crop photo to get started with AI-powered disease detection'
+              : (t('history.subtitle') || 'Upload your first crop photo to get started with AI-powered disease detection')
             }
           </p>
         </div>
@@ -199,7 +201,7 @@ export default function HistoryPage({ farmerId, language, token }) {
 
                 <div className="flex items-center gap-3 mt-1">
                   <span className="text-accent text-xs font-semibold">
-                    {report.confidence}% confidence
+                    {report.confidence}% {t('disease.confidence') || 'confidence'}
                   </span>
                   {report.urgencyLevel && (
                     <span
@@ -252,7 +254,7 @@ export default function HistoryPage({ farmerId, language, token }) {
                   {/* Yield Loss */}
                   {report.yieldLossEstimate && (
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-500 text-xs">Yield Loss</span>
+                      <span className="text-gray-500 text-xs">{t('results.yield_loss') || 'Yield Loss'}</span>
                       <span className="text-red-400 text-sm font-semibold">
                         {report.yieldLossEstimate}
                       </span>
@@ -263,7 +265,7 @@ export default function HistoryPage({ farmerId, language, token }) {
                   {report.estimatedRecoveryCost && (
                     <div className="flex items-center justify-between">
                       <span className="text-gray-500 text-xs">
-                        Recovery Cost
+                        {t('results.recovery_cost') || 'Recovery Cost'}
                       </span>
                       <span className="text-yellow-400 text-sm font-semibold">
                         {report.estimatedRecoveryCost}
@@ -275,7 +277,7 @@ export default function HistoryPage({ farmerId, language, token }) {
                   {report.organicTreatment && (
                     <div>
                       <p className="text-gray-500 text-xs mb-1">
-                        🌿 Top Organic Treatment
+                        🌿 {t('disease.organic') || 'Top Organic Treatment'}
                       </p>
                       <p className="text-gray-300 text-sm">
                         {parseJsonList(report.organicTreatment)[0] || 'N/A'}
@@ -287,7 +289,7 @@ export default function HistoryPage({ farmerId, language, token }) {
                   {report.bestTimeToTreat && (
                     <div>
                       <p className="text-gray-500 text-xs mb-1">
-                        🕐 Best Time to Treat
+                        🕐 {t('results.best_time') || 'Best Time to Treat'}
                       </p>
                       <p className="text-accent text-sm">
                         {report.bestTimeToTreat}
