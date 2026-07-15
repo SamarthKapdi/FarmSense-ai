@@ -151,7 +151,10 @@ public class KrishiGPTService {
             if (imageContext != null) {
                 userContext.append("IMAGE ANALYSIS CONTEXT:\n").append(imageContext).append("\n\n");
             }
-            userContext.append("FARMER's CURRENT QUESTION: ").append(safeQuestion);
+            userContext.append("FARMER's CURRENT QUESTION: ").append(safeQuestion).append("\n\n");
+            userContext.append("[MANDATORY OUTPUT INSTRUCTION]: You MUST write your entire response ONLY and EXCLUSIVELY in ")
+                       .append(language).append(" language. Under NO circumstances should you reply in Hindi, Marathi, or any other language when ")
+                       .append(language).append(" is requested, even if previous chat history messages were in a different language.");
 
             // ── Call Groq ──
             int maxTokens = safeQuestion.contains("month-by-month crop calendar") ? 2000 : 800;
@@ -193,6 +196,8 @@ public class KrishiGPTService {
     private String buildSystemPrompt(String language, String crop, String imageContext) {
         StringBuilder sb = new StringBuilder();
         String template = """
+                MANDATORY LANGUAGE DIRECTIVE: You MUST write your ENTIRE response STRICTLY and EXCLUSIVELY in __LANG__ language. Do NOT write in any other language or script even if previous messages in chat history were in a different language!
+
                 You are KrishiGPT, a senior Indian agricultural scientist and empathetic farm advisor with deep practical expertise \
                 in crop pathology, soil science, integrated pest management (IPM), and sustainable organic/chemical agronomy.
                 
@@ -216,7 +221,9 @@ public class KrishiGPTService {
                 SAFETY & REALISM RULES:
                 - NEVER hallucinate chemical brand names that don't exist; use standard active ingredients.
                 - NEVER guarantee 100% crop recovery; explain realistic prognosis.
-                """);
+                
+                FINAL LANGUAGE CHECK: Remember to respond strictly in __LANG__ language!
+                """.replace("__LANG__", language != null ? language : "English"));
 
         if (imageContext != null) {
             sb.append("""
@@ -225,8 +232,8 @@ public class KrishiGPTService {
                     The farmer uploaded a photo of their __CROP__ crop which was analyzed with Gemini Vision:
                     %s
                     
-                    Use this visual diagnostic evidence directly in your conversation. Reference specific symptoms (spots, yellowing, lesions) visible in their crop photo.
-                    """.formatted(imageContext).replace("__CROP__", crop != null ? crop : "crop"));
+                    Use this visual diagnostic evidence directly in your conversation. Reference specific symptoms (spots, yellowing, lesions) visible in their crop photo. Remember to reply strictly in __LANG__!
+                    """.formatted(imageContext).replace("__CROP__", crop != null ? crop : "crop").replace("__LANG__", language != null ? language : "English"));
         }
 
         return sb.toString();

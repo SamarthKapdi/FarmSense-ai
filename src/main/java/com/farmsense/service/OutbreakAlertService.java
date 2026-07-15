@@ -6,6 +6,7 @@ import com.farmsense.repository.OutbreakAlertRepository;
 import com.farmsense.repository.ReportRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.annotation.PostConstruct;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,34 @@ public class OutbreakAlertService {
     private final ReportRepository reportRepository;
     private final OutbreakAlertRepository alertRepository;
 
+    @PostConstruct
+    public void cleanupInvalidAlerts() {
+        try {
+            log.info("Checking and cleaning up invalid outbreak alerts from database...");
+            List<OutbreakAlert> allAlerts = alertRepository.findAll();
+            List<OutbreakAlert> invalid = allAlerts.stream()
+                    .filter(a -> isIgnoredDisease(a.getDisease()))
+                    .toList();
+            if (!invalid.isEmpty()) {
+                alertRepository.deleteAll(invalid);
+                log.warn("🚨 Permanently removed {} invalid outbreak alerts (e.g. Healthy / Not a recognizable crop image)", invalid.size());
+            }
+        } catch (Exception e) {
+            log.error("Failed to clean up invalid outbreak alerts on startup: {}", e.getMessage());
+        }
+    }
+
+    private boolean isIgnoredDisease(String disease) {
+        if (disease == null || disease.isBlank()) return true;
+        String lower = disease.trim().toLowerCase();
+        return lower.equals("healthy") ||
+               lower.contains("healthy") ||
+               lower.contains("not a recognizable") ||
+               lower.equals("no disease") ||
+               lower.equals("n/a") ||
+               lower.equals("unknown");
+    }
+
     /**
      * Runs every 2 hours to check for disease outbreaks.
      * An outbreak = ≥3 reports of same disease in 48 hours.
@@ -29,9 +58,11 @@ public class OutbreakAlertService {
     public void checkForOutbreaks() {
         log.info("Running outbreak detection scan...");
 
+        cleanupInvalidAlerts(); // Ensure clean state before check
+
         LocalDateTime cutoff = LocalDateTime.now().minusHours(48);
         List<DetectionReport> recentReports = reportRepository.findByCreatedAtAfterAndIsHealthyFalse(cutoff).stream()
-                .filter(r -> r.getDiseaseName() != null)
+                .filter(r -> r.getDiseaseName() != null && !isIgnoredDisease(r.getDiseaseName()))
                 .toList();
 
         // Group by disease name
@@ -79,10 +110,14 @@ public class OutbreakAlertService {
     }
 
     public List<OutbreakAlert> getActiveAlerts() {
-        return alertRepository.findByActiveTrueOrderByCreatedAtDesc();
+        return alertRepository.findByActiveTrueOrderByCreatedAtDesc().stream()
+                .filter(a -> !isIgnoredDisease(a.getDisease()))
+                .toList();
     }
 
     public List<OutbreakAlert> getAlertsByRegion(String region) {
-        return alertRepository.findByRegionAndActiveTrueOrderByCreatedAtDesc(region);
+        return alertRepository.findByRegionAndActiveTrueOrderByCreatedAtDesc(region).stream()
+                .filter(a -> !isIgnoredDisease(a.getDisease()))
+                .toList();
     }
 }

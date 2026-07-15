@@ -38,6 +38,10 @@ public class AgronomistService {
         report.setVerified(true);
         if (correctDisease != null && !correctDisease.isEmpty()) {
             report.setDiseaseName(correctDisease);
+            boolean isHealthyScan = "healthy".equalsIgnoreCase(correctDisease) ||
+                    "no disease".equalsIgnoreCase(correctDisease) ||
+                    correctDisease.toLowerCase().contains("not a recognizable");
+            report.setHealthy(isHealthyScan);
         }
         report.setExpertNotes(notes);
         

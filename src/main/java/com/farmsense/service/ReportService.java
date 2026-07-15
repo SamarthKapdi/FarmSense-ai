@@ -25,6 +25,11 @@ public class ReportService {
             String chemicalJson = objectMapper.writeValueAsString(result.getChemicalTreatment());
             String preventiveJson = objectMapper.writeValueAsString(result.getPreventiveMeasures());
 
+            boolean isHealthyScan = result.isHealthy() ||
+                    "healthy".equalsIgnoreCase(result.getDiseaseName()) ||
+                    "no disease".equalsIgnoreCase(result.getDiseaseName()) ||
+                    (result.getDiseaseName() != null && result.getDiseaseName().toLowerCase().contains("not a recognizable"));
+
             DetectionReport report = DetectionReport.builder()
                     .farmerId(farmerId)
                     .cropName(crop)
@@ -39,6 +44,7 @@ public class ReportService {
                     .bestTimeToTreat(result.getBestTimeToTreat())
                     .estimatedRecoveryCost(result.getEstimatedRecoveryCost())
                     .urgencyLevel(result.getUrgencyLevel())
+                    .isHealthy(isHealthyScan)
                     .build();
 
             reportRepository.save(report);

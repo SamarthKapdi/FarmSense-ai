@@ -22,7 +22,18 @@ export default function OutbreakBanner() {
     if (token) fetchAlerts()
   }, [token])
 
-  const visibleAlerts = alerts.filter((a) => !dismissed.has(a.id))
+  const visibleAlerts = alerts.filter((a) => {
+    if (dismissed.has(a.id)) return false
+    if (!a.disease) return false
+    const lower = a.disease.trim().toLowerCase()
+    return (
+      !lower.includes('healthy') &&
+      !lower.includes('not a recognizable') &&
+      lower !== 'no disease' &&
+      lower !== 'unknown' &&
+      lower !== 'n/a'
+    )
+  })
 
   if (visibleAlerts.length === 0) return null
 

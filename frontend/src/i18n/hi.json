@@ -24,7 +24,9 @@
     "format": "JPG, PNG • अधिकतम 10MB",
     "select_crop": "फसल प्रकार चुनें",
     "analyze": "AI से विश्लेषण करें",
-    "analyzing": "AI विश्लेषण कर रहा है..."
+    "analyzing": "AI विश्लेषण कर रहा है...",
+    "camera": "कैमरा",
+    "gallery": "गैलरी"
   },
   "weather": {
     "title": "मौसम जानकारी",
