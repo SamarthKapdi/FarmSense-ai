@@ -65,3 +65,23 @@ export const getAdvisories = async () => {
     throw new Error(data.message || 'Failed to fetch advisories')
   return data.data
 }
+
+export const getFarmerStats = async () => {
+  const response = await fetch(`${BASE_URL}/farmer-stats`, {
+    headers: getAuthHeaders(),
+  })
+  const data = await safeJson(response)
+  if (!response.ok)
+    throw new Error(data.message || 'Failed to fetch farmer stats')
+  return data.data
+}
+
+export const getActivityFeed = async (type = 'ALL', limit = 50) => {
+  const response = await fetch(`${BASE_URL}/activity-feed?type=${type}&limit=${limit}`, {
+    headers: getAuthHeaders(),
+  })
+  const data = await safeJson(response)
+  if (!response.ok)
+    throw new Error(data.message || 'Failed to fetch activity feed')
+  return data.data
+}

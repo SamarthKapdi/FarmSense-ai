@@ -18,4 +18,8 @@ public interface UserActivityRepository extends JpaRepository<UserActivity, Stri
 
     @Query("SELECT COUNT(DISTINCT CAST(a.createdAt AS date)) FROM UserActivity a WHERE a.userId = :userId")
     Long countDistinctActiveDays(String userId);
+
+    List<UserActivity> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
+    List<UserActivity> findByActivityTypeInOrderByCreatedAtDesc(List<String> types, Pageable pageable);
 }

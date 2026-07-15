@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface AdvisoryRepository extends JpaRepository<Advisory, String> {
+    java.util.List<Advisory> findAllByOrderByCreatedAtDesc();
 }

@@ -3,6 +3,7 @@ package com.farmsense.controller;
 import com.farmsense.model.dto.ApiResponse;
 import com.farmsense.model.entity.Advisory;
 import com.farmsense.model.entity.DetectionReport;
+import com.farmsense.model.entity.UserActivity;
 import com.farmsense.service.AgronomistService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -33,24 +34,34 @@ public class AgronomistController {
 
     @PatchMapping("/verify/{reportId}")
     public ResponseEntity<ApiResponse<DetectionReport>> verifyDiagnosis(
-            @PathVariable String reportId, @RequestBody Map<String, String> payload) {
+            @PathVariable String reportId, @RequestBody Map<String, String> payload, Principal principal) {
         String correctDisease = payload.get("correctDisease");
         String notes = payload.get("notes");
-        return ResponseEntity.ok(ApiResponse.ok(agronomistService.verifyDiagnosis(reportId, correctDisease, notes)));
+        String email = principal != null ? principal.getName() : null;
+        return ResponseEntity.ok(ApiResponse.ok(agronomistService.verifyDiagnosis(reportId, correctDisease, notes, email)));
     }
 
     @PostMapping("/advisory")
     public ResponseEntity<ApiResponse<Advisory>> publishAdvisory(
             @RequestBody Advisory advisory, Principal principal) {
-        // Find user by email or id from principal to set authorId.
-        // Assuming principal.getName() returns the email or ID depending on JwtService config.
-        // Usually, principal.getName() is the subject (email) or UUID.
-        // Let's assume it's UUID. If not, the agronomistService can fetch User from DB.
-        return ResponseEntity.ok(ApiResponse.ok(agronomistService.publishAdvisory(advisory, principal.getName())));
+        String email = principal != null ? principal.getName() : null;
+        return ResponseEntity.ok(ApiResponse.ok(agronomistService.publishAdvisory(advisory, email)));
     }
 
     @GetMapping("/advisories")
     public ResponseEntity<ApiResponse<List<Advisory>>> getAdvisories() {
         return ResponseEntity.ok(ApiResponse.ok(agronomistService.getAllAdvisories()));
+    }
+
+    @GetMapping("/farmer-stats")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getFarmerStats() {
+        return ResponseEntity.ok(ApiResponse.ok(agronomistService.getFarmerStats()));
+    }
+
+    @GetMapping("/activity-feed")
+    public ResponseEntity<ApiResponse<List<UserActivity>>> getActivityFeed(
+            @RequestParam(required = false, defaultValue = "ALL") String type,
+            @RequestParam(required = false, defaultValue = "50") int limit) {
+        return ResponseEntity.ok(ApiResponse.ok(agronomistService.getUnifiedActivities(type, limit)));
     }
 }

@@ -35,6 +35,9 @@ public class Advisory {
     @Column(name = "author_id")
     private String authorId;
 
+    @Column(name = "author_name")
+    private String authorName;
+
     private LocalDateTime validUntil;
 
     @CreationTimestamp
