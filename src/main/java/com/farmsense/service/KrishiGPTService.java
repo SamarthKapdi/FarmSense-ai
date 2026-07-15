@@ -141,7 +141,8 @@ public class KrishiGPTService {
             // ── Build user message with history context ──
             StringBuilder userContext = new StringBuilder();
             if (!history.isEmpty()) {
-                userContext.append("PREVIOUS CHAT HISTORY (for context):\n");
+                userContext.append("PREVIOUS CHAT HISTORY (CRITICAL NOTE: Earlier turns in this conversation might be in a different language. Do NOT imitate the language of previous messages! You MUST respond exclusively in ")
+                           .append(language).append("):\n");
                 for (int i = Math.min(2, history.size() - 1); i >= 0; i--) {
                     userContext.append("Farmer: ").append(history.get(i).getQuestion()).append("\n");
                     userContext.append("KrishiGPT: ").append(history.get(i).getAnswer()).append("\n\n");
@@ -154,7 +155,8 @@ public class KrishiGPTService {
             userContext.append("FARMER's CURRENT QUESTION: ").append(safeQuestion).append("\n\n");
             userContext.append("[MANDATORY OUTPUT INSTRUCTION]: You MUST write your entire response ONLY and EXCLUSIVELY in ")
                        .append(language).append(" language. Under NO circumstances should you reply in Hindi, Marathi, or any other language when ")
-                       .append(language).append(" is requested, even if previous chat history messages were in a different language.");
+                       .append(language).append(" is requested, even if previous chat history messages were in a different language. ")
+                       .append("Also, accurately refer to the selected crop (").append(safeCrop).append(") without substituting unrelated words from other languages (such as calling Tomato 'शेंगदाणे').");
 
             // ── Call Groq ──
             int maxTokens = safeQuestion.contains("month-by-month crop calendar") ? 2000 : 800;
