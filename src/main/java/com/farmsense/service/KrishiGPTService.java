@@ -129,22 +129,24 @@ public class KrishiGPTService {
                 }
             }
 
-            // ── Fetch Conversation Memory (Strictly filtered by current language) ──
-            List<com.farmsense.model.entity.ChatHistory> allHistory = new ArrayList<>();
+            // ── Fetch Conversation Memory (script-validated & time-limited) ──
+            List<com.farmsense.model.entity.ChatHistory> history = List.of();
             if (userId != null) {
-                allHistory = chatHistoryRepository.findByUserIdOrderByCreatedAtDesc(userId);
+                java.time.LocalDateTime cutoff = java.time.LocalDateTime.now().minusMinutes(30);
+                history = chatHistoryRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+                        .filter(h -> h.getCreatedAt() != null && h.getCreatedAt().isAfter(cutoff))
+                        .filter(h -> isAnswerInExpectedScript(h.getAnswer(), language))
+                        .limit(3)
+                        .toList();
             }
-            List<com.farmsense.model.entity.ChatHistory> history = allHistory.stream()
-                    .filter(h -> safeLanguageName(h.getLanguage()).equalsIgnoreCase(language))
-                    .toList();
             
             // ── Build system prompt ──
             String systemPrompt = buildSystemPrompt(language, safeCrop, imageContext);
 
-            // ── Build user message with history context ──
+            // ── Build user message (NO history if it's potentially polluted) ──
             StringBuilder userContext = new StringBuilder();
             if (!history.isEmpty()) {
-                userContext.append("PREVIOUS CHAT HISTORY (for context, written strictly in ").append(language).append("):\n");
+                userContext.append("PREVIOUS CHAT HISTORY (all in ").append(language).append("):\n");
                 for (int i = Math.min(2, history.size() - 1); i >= 0; i--) {
                     userContext.append("Farmer: ").append(history.get(i).getQuestion()).append("\n");
                     userContext.append("KrishiGPT: ").append(history.get(i).getAnswer()).append("\n\n");
@@ -154,15 +156,22 @@ public class KrishiGPTService {
             if (imageContext != null) {
                 userContext.append("IMAGE ANALYSIS CONTEXT:\n").append(imageContext).append("\n\n");
             }
-            userContext.append("FARMER's CURRENT QUESTION: ").append(safeQuestion).append("\n\n");
-            userContext.append("[MANDATORY OUTPUT INSTRUCTION]: You MUST write your entire response ONLY and EXCLUSIVELY in ")
-                       .append(language).append(" language. Under NO circumstances should you reply in Hindi, Marathi, or any other language when ")
-                       .append(language).append(" is requested, even if previous chat history messages were in a different language. ")
-                       .append("Also, accurately refer to the selected crop (").append(safeCrop).append(") without substituting unrelated words from other languages (such as calling Tomato 'शेंगदाणे').");
+            userContext.append("FARMER's CURRENT QUESTION: ").append(safeQuestion);
 
             // ── Call Groq ──
             int maxTokens = safeQuestion.contains("month-by-month crop calendar") ? 2000 : 800;
-            return callGroq(systemPrompt, userContext.toString(), startedAt, maxTokens);
+            String response = callGroq(systemPrompt, userContext.toString(), startedAt, maxTokens);
+
+            // ── Post-response language validation ──
+            if (!isAnswerInExpectedScript(response, language)) {
+                log.warn("[CHAT] Response was in wrong script for language={}. Retrying with stricter prompt.", language);
+                String retryPrompt = "[CRITICAL LANGUAGE OVERRIDE] The user selected " + language +
+                        ". You MUST respond ONLY in " + language + ". The farmer's crop is " + safeCrop +
+                        ". Their question: " + safeQuestion;
+                response = callGroq(systemPrompt, retryPrompt, startedAt, maxTokens);
+            }
+
+            return response;
 
         } catch (Exception e) {
             long totalTime = System.currentTimeMillis() - startedAt;
@@ -191,6 +200,54 @@ public class KrishiGPTService {
             log.warn("[CHAT] Image decode/analysis failed: {}", e.getMessage());
             return null;
         }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════════
+    // SCRIPT DETECTION — validates response matches the expected language script
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Checks if the given text is written in the expected script for the language.
+     * For English, rejects text that contains significant Devanagari/other Indic scripts.
+     * For Hindi/Marathi, rejects text that is predominantly Latin with no Devanagari.
+     */
+    private boolean isAnswerInExpectedScript(String text, String language) {
+        if (text == null || text.isBlank() || text.length() < 20) return true;
+
+        // Count characters by Unicode script
+        long devanagari = text.codePoints()
+                .filter(cp -> Character.UnicodeScript.of(cp) == Character.UnicodeScript.DEVANAGARI).count();
+        long tamil = text.codePoints()
+                .filter(cp -> Character.UnicodeScript.of(cp) == Character.UnicodeScript.TAMIL).count();
+        long telugu = text.codePoints()
+                .filter(cp -> Character.UnicodeScript.of(cp) == Character.UnicodeScript.TELUGU).count();
+        long kannada = text.codePoints()
+                .filter(cp -> Character.UnicodeScript.of(cp) == Character.UnicodeScript.KANNADA).count();
+        long bengali = text.codePoints()
+                .filter(cp -> Character.UnicodeScript.of(cp) == Character.UnicodeScript.BENGALI).count();
+        long gujarati = text.codePoints()
+                .filter(cp -> Character.UnicodeScript.of(cp) == Character.UnicodeScript.GUJARATI).count();
+        long gurmukhi = text.codePoints()
+                .filter(cp -> Character.UnicodeScript.of(cp) == Character.UnicodeScript.GURMUKHI).count();
+        long malayalam = text.codePoints()
+                .filter(cp -> Character.UnicodeScript.of(cp) == Character.UnicodeScript.MALAYALAM).count();
+        long latin = text.codePoints()
+                .filter(cp -> Character.UnicodeScript.of(cp) == Character.UnicodeScript.LATIN).count();
+
+        long totalIndic = devanagari + tamil + telugu + kannada + bengali + gujarati + gurmukhi + malayalam;
+
+        return switch (language) {
+            case "English" -> totalIndic < 10; // English should have almost no Indic script
+            case "Hindi", "Marathi" -> devanagari > latin; // Hindi/Marathi must be predominantly Devanagari
+            case "Tamil" -> tamil > latin;
+            case "Telugu" -> telugu > latin;
+            case "Kannada" -> kannada > latin;
+            case "Bengali" -> bengali > latin;
+            case "Gujarati" -> gujarati > latin;
+            case "Punjabi" -> gurmukhi > latin;
+            case "Malayalam" -> malayalam > latin;
+            default -> true; // Allow unknown languages
+        };
     }
 
     // ═════════════════════════════════════════════════════════════════════════════
@@ -258,7 +315,7 @@ public class KrishiGPTService {
                 Map.of("role", "system", "content", systemPrompt),
                 Map.of("role", "user", "content", userMessage)
             ),
-            "temperature", 0.4,
+            "temperature", 0.2,
             "max_tokens", maxTokens
         );
 
