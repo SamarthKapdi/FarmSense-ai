@@ -199,22 +199,33 @@ public class DetectionController {
                 .body(pdfBytes);
     }
 
+    private boolean isAuthorizedForFarmer(String userId, String targetFarmerId) {
+        if (userId == null) return false;
+        if (userId.equals(targetFarmerId)) return true;
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null) {
+            return auth.getAuthorities().stream().anyMatch(a ->
+                    a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_AGRONOMIST"));
+        }
+        return false;
+    }
+
     /**
      * GET /api/farm/history/{farmerId} — get scan history by farmer ID
      */
     @GetMapping("/history/{farmerId}")
     public ResponseEntity<?> getHistory(@PathVariable String farmerId, HttpServletRequest request) {
         String userId = (String) request.getAttribute("userId");
-        String effectiveId = userId != null ? userId : farmerId;
-
-        if (userId != null) {
-            String userEmail = (String) request.getAttribute("userEmail");
-            String userName = (String) request.getAttribute("userName");
-            activityService.logActivity(userId, userEmail, userName,
-                    "VIEW_HISTORY", "Viewed scan history", null);
+        if (!isAuthorizedForFarmer(userId, farmerId)) {
+            return ResponseEntity.status(403).body(ApiResponse.error("Access denied to view this history"));
         }
 
-        return ResponseEntity.ok(ApiResponse.ok(reportService.getHistory(effectiveId)));
+        String userEmail = (String) request.getAttribute("userEmail");
+        String userName = (String) request.getAttribute("userName");
+        activityService.logActivity(userId, userEmail, userName,
+                "VIEW_HISTORY", "Viewed scan history for " + farmerId, null);
+
+        return ResponseEntity.ok(ApiResponse.ok(reportService.getHistory(farmerId)));
     }
 
     /**
@@ -230,8 +241,10 @@ public class DetectionController {
     @GetMapping("/stats/{farmerId}")
     public ResponseEntity<?> getStats(@PathVariable String farmerId, HttpServletRequest request) {
         String userId = (String) request.getAttribute("userId");
-        String effectiveId = userId != null ? userId : farmerId;
-        return ResponseEntity.ok(ApiResponse.ok(reportService.getStats(effectiveId)));
+        if (!isAuthorizedForFarmer(userId, farmerId)) {
+            return ResponseEntity.status(403).body(ApiResponse.error("Access denied to view these stats"));
+        }
+        return ResponseEntity.ok(ApiResponse.ok(reportService.getStats(farmerId)));
     }
 
     @Value("${GEMINI_API_KEY:}")

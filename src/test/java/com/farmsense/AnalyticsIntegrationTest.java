@@ -29,6 +29,9 @@ class AnalyticsIntegrationTest {
                 new ParameterizedTypeReference<>() {}
         );
         // Should be 401 or 403 because no JWT token is provided
-        assertEquals(HttpStatus.FORBIDDEN, res.getStatusCode());
+        org.junit.jupiter.api.Assertions.assertTrue(
+                res.getStatusCode() == HttpStatus.FORBIDDEN || res.getStatusCode() == HttpStatus.UNAUTHORIZED,
+                "Expected 401 UNAUTHORIZED or 403 FORBIDDEN for unauthenticated access, but got: " + res.getStatusCode()
+        );
     }
 }

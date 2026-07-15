@@ -110,16 +110,21 @@ public class DiseaseDetectionService {
      * Used by KrishiGPT chatbot for image-based questions.
      */
     public String analyzeImageForChat(byte[] imageBytes, String crop) {
+        return analyzeImageForChat(imageBytes, crop, "en");
+    }
+
+    public String analyzeImageForChat(byte[] imageBytes, String crop, String langCode) {
         if (imageBytes == null || imageBytes.length == 0) return null;
         if (geminiApiKey == null || geminiApiKey.trim().isEmpty()) return null;
 
         try {
+            String languageName = KrishiGPTService.safeLanguageName(langCode);
             String base64Image = Base64.getEncoder().encodeToString(imageBytes);
             String prompt = "You are an expert agricultural scientist. Analyze this " +
                     (crop != null ? crop : "crop") + " image. " +
-                    "Describe what you see: the plant's health, any visible diseases, pests, " +
+                    "Describe what you see in " + languageName + " language: the plant's health, any visible diseases, pests, " +
                     "discoloration, spots, wilting, or damage. " +
-                    "Be specific about symptoms. Keep it under 100 words. " +
+                    "Be specific about symptoms in " + languageName + ". Keep it under 100 words. " +
                     "If the image is not a plant, say so.";
 
             Map<String, Object> requestBody = Map.of(
@@ -236,22 +241,22 @@ public class DiseaseDetectionService {
 
     private String buildExpertPrompt(String crop) {
         String c = (crop == null || crop.isBlank()) ? "crop" : crop.trim();
-        return """
+        String template = """
             You are a senior plant pathologist with 25 years of experience in Indian agriculture.
             
-            TASK: Examine this %s image with extreme precision. Identify any disease, pest damage, \
+            TASK: Examine this __CROP__ image with extreme precision. Identify any disease, pest damage, \
             nutrient deficiency, or abnormality. If the plant looks perfectly healthy, say so.
             
             CRITICAL RULES:
-            - NEVER hallucinate diseases that cannot affect %s
-            - Only diagnose diseases that are known to occur in %s cultivation
+            - NEVER hallucinate diseases that cannot affect __CROP__
+            - Only diagnose diseases that are known to occur in __CROP__ cultivation
             - If uncertain, set confidence below 60 and explain why
             - Explain image quality issues (blurry, dark, distant) and reduce confidence if so
             - Provide a differential diagnosis with EXPLICIT reasoning on why the primary was chosen over alternatives
             - DO NOT use repetitive generic phrases like "consult KVK", "neem oil", "crop rotation", or "proper drainage" blindly. Be specific to the exact context.
-            - If the image is NOT a %s plant, say "Not a recognizable crop image"
+            - If the image is NOT a __CROP__ plant, say "Not a recognizable crop image"
             - Base yield loss on actual agricultural research, not guesses
-            - Treatments must be specific to %s — different crops need different treatments
+            - Treatments must be specific to __CROP__ — different crops need different treatments
             
             Return ONLY a valid JSON object with NO markdown, NO code fences, NO explanation text.
             The JSON must have exactly these fields:
@@ -289,7 +294,8 @@ public class DiseaseDetectionService {
             }
             
             IMPORTANT: Return ONLY the JSON object. No text before or after it.
-            """.formatted(c, c, c, c, c);
+            """;
+        return template.replace("__CROP__", c);
     }
 
     // ═════════════════════════════════════════════════════════════════════════════

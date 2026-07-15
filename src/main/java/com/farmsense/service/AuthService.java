@@ -26,6 +26,39 @@ public class AuthService {
         private final PasswordResetTokenRepository resetTokenRepository;
         private final TotpService totpService;
 
+        private final java.util.Map<String, RateLimitAttempt> rateLimitMap = new java.util.concurrent.ConcurrentHashMap<>();
+
+        private static class RateLimitAttempt {
+                int count;
+                LocalDateTime lastAttempt;
+                RateLimitAttempt() { this.count = 1; this.lastAttempt = LocalDateTime.now(); }
+        }
+
+        private boolean isRateLimited(String key) {
+                RateLimitAttempt attempt = rateLimitMap.get(key);
+                if (attempt == null) return false;
+                if (attempt.lastAttempt.plusMinutes(15).isBefore(LocalDateTime.now())) {
+                        rateLimitMap.remove(key);
+                        return false;
+                }
+                return attempt.count >= 5;
+        }
+
+        private void recordFailedAttempt(String key) {
+                rateLimitMap.compute(key, (k, v) -> {
+                        if (v == null || v.lastAttempt.plusMinutes(15).isBefore(LocalDateTime.now())) {
+                                return new RateLimitAttempt();
+                        }
+                        v.count++;
+                        v.lastAttempt = LocalDateTime.now();
+                        return v;
+                });
+        }
+
+        private void clearFailedAttempts(String key) {
+                rateLimitMap.remove(key);
+        }
+
         public AuthResponse register(com.farmsense.model.dto.AuthRequest request) {
                 String email = request.getEmail();
                 String password = request.getPassword();
@@ -109,12 +142,26 @@ public class AuthService {
                                         .build();
                 }
 
+                if (isRateLimited("LOGIN_" + email)) {
+                        return AuthResponse.builder()
+                                        .message("Too many failed login attempts. Try again later.")
+                                        .build();
+                }
+
                 User user = optUser.get();
+                if (!user.isEnabled()) {
+                        return AuthResponse.builder()
+                                        .message("User account is disabled or locked.")
+                                        .build();
+                }
+
                 if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+                        recordFailedAttempt("LOGIN_" + email);
                         return AuthResponse.builder()
                                         .message("Wrong password. Please try again.")
                                         .build();
                 }
+                clearFailedAttempts("LOGIN_" + email);
 
                 if (user.getTotpSecret() != null && !user.getTotpSecret().isEmpty()) {
                         return AuthResponse.builder()
@@ -213,6 +260,9 @@ public class AuthService {
         }
 
         public String resetPassword(String email, String code, String newPassword) {
+                if (isRateLimited("RESET_" + email)) {
+                        return "Too many failed reset attempts. Try again later.";
+                }
                 if (newPassword == null || newPassword.length() < 8) {
                         return "Password must be at least 8 characters.";
                 }
@@ -221,6 +271,7 @@ public class AuthService {
                                 .findByEmailAndTokenAndUsedFalse(email, code);
 
                 if (opt.isEmpty()) {
+                        recordFailedAttempt("RESET_" + email);
                         return "Invalid or expired reset code.";
                 }
 
@@ -235,11 +286,15 @@ public class AuthService {
                 }
 
                 User user = userOpt.get();
+                if (!user.isEnabled()) {
+                        return "User account is disabled or locked.";
+                }
                 user.setPasswordHash(passwordEncoder.encode(newPassword));
                 userRepository.save(user);
 
                 resetToken.setUsed(true);
                 resetTokenRepository.save(resetToken);
+                clearFailedAttempts("RESET_" + email);
 
                 log.info("Password reset successful for: {}", email);
                 return "OK";
@@ -257,19 +312,28 @@ public class AuthService {
         }
 
         public AuthResponse verify2FA(String email, String code) {
+                if (isRateLimited("2FA_" + email)) {
+                        return AuthResponse.builder().message("Too many failed 2FA attempts. Try again later.").build();
+                }
+
                 Optional<User> optUser = userRepository.findByEmail(email);
                 if (optUser.isEmpty()) {
                         return AuthResponse.builder().message("User not found").build();
                 }
 
                 User user = optUser.get();
+                if (!user.isEnabled()) {
+                        return AuthResponse.builder().message("User account is disabled or locked.").build();
+                }
                 if (user.getTotpSecret() == null) {
                         return AuthResponse.builder().message("2FA not enabled for user").build();
                 }
 
                 if (!totpService.verifyCode(user.getTotpSecret(), code)) {
+                        recordFailedAttempt("2FA_" + email);
                         return AuthResponse.builder().message("Invalid 2FA code").build();
                 }
+                clearFailedAttempts("2FA_" + email);
 
                 user.setLastLoginAt(LocalDateTime.now());
                 userRepository.save(user);

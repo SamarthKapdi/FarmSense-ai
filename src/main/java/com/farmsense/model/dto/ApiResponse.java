@@ -23,7 +23,29 @@ public class ApiResponse<T> {
     private T data;
 
     @Builder.Default
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = FlexibleLocalDateTimeDeserializer.class)
     private LocalDateTime timestamp = LocalDateTime.now();
+
+    public static class FlexibleLocalDateTimeDeserializer extends com.fasterxml.jackson.databind.JsonDeserializer<LocalDateTime> {
+        @Override
+        public LocalDateTime deserialize(com.fasterxml.jackson.core.JsonParser p, com.fasterxml.jackson.databind.DeserializationContext ctxt) throws java.io.IOException {
+            String text = p.getText();
+            if (text == null || text.isBlank()) return null;
+            try {
+                return LocalDateTime.parse(text);
+            } catch (java.time.format.DateTimeParseException e) {
+                try {
+                    return java.time.ZonedDateTime.parse(text).toLocalDateTime();
+                } catch (Exception ex) {
+                    try {
+                        return java.time.OffsetDateTime.parse(text).toLocalDateTime();
+                    } catch (Exception ex2) {
+                        return LocalDateTime.now();
+                    }
+                }
+            }
+        }
+    }
 
     public static <T> ApiResponse<T> ok(T data) {
         return ApiResponse.<T>builder()

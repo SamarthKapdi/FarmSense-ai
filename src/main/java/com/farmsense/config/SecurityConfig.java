@@ -46,6 +46,21 @@ public class SecurityConfig {
                         .requestMatchers("/api/sse/**").authenticated()
                         .anyRequest().authenticated())
                 .headers(headers -> headers.frameOptions(f -> f.sameOrigin()))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json");
+                            response.getWriter().write(new com.fasterxml.jackson.databind.ObjectMapper()
+                                    .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
+                                    .writeValueAsString(com.farmsense.model.dto.ApiResponse.error("Authentication required")));
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json");
+                            response.getWriter().write(new com.fasterxml.jackson.databind.ObjectMapper()
+                                    .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
+                                    .writeValueAsString(com.farmsense.model.dto.ApiResponse.error("Access denied")));
+                        }))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

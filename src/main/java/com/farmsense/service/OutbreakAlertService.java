@@ -30,9 +30,8 @@ public class OutbreakAlertService {
         log.info("Running outbreak detection scan...");
 
         LocalDateTime cutoff = LocalDateTime.now().minusHours(48);
-        List<DetectionReport> recentReports = reportRepository.findAll().stream()
-                .filter(r -> r.getCreatedAt() != null && r.getCreatedAt().isAfter(cutoff))
-                .filter(r -> r.getDiseaseName() != null && !r.isHealthy())
+        List<DetectionReport> recentReports = reportRepository.findByCreatedAtAfterAndIsHealthyFalse(cutoff).stream()
+                .filter(r -> r.getDiseaseName() != null)
                 .toList();
 
         // Group by disease name

@@ -124,36 +124,41 @@ public class ChatController {
      */
     @GetMapping("/calendar/{crop}")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getCropCalendar(
-            @PathVariable String crop, HttpServletRequest request) {
+            @PathVariable String crop,
+            @RequestParam(required = false, defaultValue = "en") String lang,
+            HttpServletRequest request) {
 
         String userId = (String) request.getAttribute("userId");
-        log.info("Calendar request for crop: {}, user: {}", crop, userId);
+        String languageName = KrishiGPTService.safeLanguageName(lang);
+        log.info("Calendar request for crop: {}, lang: {} ({}), user: {}", crop, lang, languageName, userId);
 
-        String cacheKey = crop.toLowerCase().trim();
+        String cacheKey = crop.toLowerCase().trim() + "_" + languageName.toLowerCase();
         CachedCalendar cached = calendarCache.get(cacheKey);
 
         if (cached != null && (System.currentTimeMillis() - cached.timestamp()) < CALENDAR_TTL_MS) {
-            log.info("Calendar cache hit for {}", crop);
+            log.info("Calendar cache hit for {} [{}]", crop, languageName);
             return ResponseEntity.ok(ApiResponse.ok(Map.of(
                     "crop", crop,
                     "calendar", cached.data(),
+                    "language", lang,
                     "cached", true)));
         }
 
-        String prompt = "Generate a month-by-month crop calendar for growing " + crop + " in India. " +
+        String prompt = "Generate a month-by-month crop calendar for growing " + crop + " in India in " + languageName + " language. " +
                 "For each month (January to December), provide: sowing/transplanting, irrigation, fertilisation, " +
-                "pest/disease watch, and harvesting activities. " +
+                "pest/disease watch, and harvesting activities in " + languageName + ". " +
                 "Return ONLY a JSON array with 12 objects, each with keys: " +
-                "\"month\" (month name), \"activities\" (array of activity strings). " +
+                "\"month\" (month name in " + languageName + "), \"activities\" (array of activity strings in " + languageName + "). " +
                 "No markdown, no explanation, just the JSON array.";
 
-        String calendarData = krishiGPTService.askKrishiGPT(userId, prompt, crop, "en", null);
+        String calendarData = krishiGPTService.askKrishiGPT(userId, prompt, crop, lang, null);
 
         calendarCache.put(cacheKey, new CachedCalendar(calendarData, System.currentTimeMillis()));
 
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
                 "crop", crop,
                 "calendar", calendarData,
+                "language", lang,
                 "cached", false)));
     }
 

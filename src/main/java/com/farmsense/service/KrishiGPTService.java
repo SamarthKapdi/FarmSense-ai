@@ -60,17 +60,45 @@ public class KrishiGPTService {
         }
     }
 
-    private static final Map<String, String> LANGUAGE_NAMES = Map.of(
-            "en", "English",
-            "hi", "Hindi",
-            "ta", "Tamil",
-            "te", "Telugu",
-            "mr", "Marathi",
-            "pa", "Punjabi");
+    private static final Map<String, String> LANGUAGE_NAMES = Map.ofEntries(
+            Map.entry("en", "English"),
+            Map.entry("hi", "Hindi"),
+            Map.entry("ta", "Tamil"),
+            Map.entry("te", "Telugu"),
+            Map.entry("mr", "Marathi"),
+            Map.entry("pa", "Punjabi"),
+            Map.entry("gu", "Gujarati"),
+            Map.entry("bn", "Bengali"),
+            Map.entry("kn", "Kannada"),
+            Map.entry("ml", "Malayalam"),
+            Map.entry("or", "Odia"),
+            Map.entry("ur", "Urdu"),
+            Map.entry("as", "Assamese"),
+            Map.entry("ks", "Kashmiri"),
+            Map.entry("ne", "Nepali"),
+            Map.entry("sa", "Sanskrit")
+    );
 
-    private String safeLanguageName(String langCode) {
-        String normalized = (langCode == null || langCode.isBlank()) ? "en" : langCode;
-        return LANGUAGE_NAMES.getOrDefault(normalized, "English");
+    public static String safeLanguageName(String langCode) {
+        if (langCode == null || langCode.isBlank()) return "English";
+        String normalized = langCode.toLowerCase().trim();
+        if (LANGUAGE_NAMES.containsKey(normalized)) return LANGUAGE_NAMES.get(normalized);
+        if (normalized.equals("english") || normalized.startsWith("en-")) return "English";
+        if (normalized.equals("hindi") || normalized.startsWith("hi-")) return "Hindi";
+        if (normalized.equals("tamil") || normalized.startsWith("ta-")) return "Tamil";
+        if (normalized.equals("telugu") || normalized.startsWith("te-")) return "Telugu";
+        if (normalized.equals("marathi") || normalized.startsWith("mr-")) return "Marathi";
+        if (normalized.equals("punjabi") || normalized.startsWith("pa-")) return "Punjabi";
+        if (normalized.equals("gujarati") || normalized.startsWith("gu-")) return "Gujarati";
+        if (normalized.equals("bengali") || normalized.startsWith("bn-")) return "Bengali";
+        if (normalized.equals("kannada") || normalized.startsWith("kn-")) return "Kannada";
+        if (normalized.equals("malayalam") || normalized.startsWith("ml-")) return "Malayalam";
+        if (normalized.equals("odia") || normalized.startsWith("or-")) return "Odia";
+        if (normalized.equals("urdu") || normalized.startsWith("ur-")) return "Urdu";
+        if (normalized.length() > 2) {
+            return normalized.substring(0, 1).toUpperCase() + normalized.substring(1);
+        }
+        return "English";
     }
 
     // ═════════════════════════════════════════════════════════════════════════════
@@ -93,7 +121,7 @@ public class KrishiGPTService {
             String imageContext = null;
             if (imageBase64 != null && !imageBase64.isBlank()) {
                 log.info("[CHAT] Image provided — routing to Gemini Vision for analysis");
-                imageContext = analyzeImageWithGemini(imageBase64, safeCrop);
+                imageContext = analyzeImageWithGemini(imageBase64, safeCrop, langCode);
                 if (imageContext != null) {
                     log.info("[CHAT] Gemini Vision analysis complete: {}chars", imageContext.length());
                 } else {
@@ -141,7 +169,7 @@ public class KrishiGPTService {
     // REAL IMAGE ANALYSIS — Gemini Vision
     // ═════════════════════════════════════════════════════════════════════════════
 
-    private String analyzeImageWithGemini(String imageBase64, String crop) {
+    private String analyzeImageWithGemini(String imageBase64, String crop, String langCode) {
         try {
             // Strip data URL prefix if present
             String cleanBase64 = imageBase64;
@@ -150,7 +178,7 @@ public class KrishiGPTService {
             }
 
             byte[] imageBytes = Base64.getDecoder().decode(cleanBase64);
-            return diseaseDetectionService.analyzeImageForChat(imageBytes, crop);
+            return diseaseDetectionService.analyzeImageForChat(imageBytes, crop, langCode);
 
         } catch (Exception e) {
             log.warn("[CHAT] Image decode/analysis failed: {}", e.getMessage());
@@ -164,19 +192,21 @@ public class KrishiGPTService {
 
     private String buildSystemPrompt(String language, String crop, String imageContext) {
         StringBuilder sb = new StringBuilder();
-        sb.append("""
+        String template = """
                 You are KrishiGPT, a senior Indian agricultural scientist with deep expertise \
                 in crop pathology, soil science, integrated pest management, and organic farming.
                 
                 RESPONSE RULES:
-                - Respond ONLY in %s language
+                - Respond ONLY in __LANG__ language
                 - Keep responses under 200 words — be concise but expert
                 - Use simple language a farmer with basic education can understand
-                - Be specific to %s cultivation in Indian conditions
+                - Be specific to __CROP__ cultivation in Indian conditions
                 - AVOID repeating generic phrases like "consult KVK", "neem oil", "crop rotation", or "proper drainage" unless directly relevant
                 - Do NOT give generic templates. Offer tailored, crop-specific advice
                 - If the farmer's question lacks detail (or image quality is poor), ask CONTEXTUAL follow-up questions (e.g., leaf age, irrigation pattern, weather conditions)
-                """.formatted(language, crop));
+                """;
+        sb.append(template.replace("__LANG__", language != null ? language : "English")
+                          .replace("__CROP__", crop != null ? crop : "crop"));
 
         sb.append("""
                 
@@ -280,14 +310,14 @@ public class KrishiGPTService {
             String chemicalList = result.getChemicalTreatment() != null
                     ? String.join(", ", result.getChemicalTreatment()) : "consult expert";
 
-            String planPrompt = """
-                    Create a specific, actionable 7-day treatment plan in %s for a farmer \
-                    dealing with %s (%s severity) in their %s crop.
+            String planTemplate = """
+                    Create a specific, actionable 7-day treatment plan in __LANG__ for a farmer \
+                    dealing with __DISEASE__ (__SEV__ severity) in their __CROP__ crop.
                     
-                    Available organic treatments: %s
-                    Available chemical treatments: %s
-                    Spray interval: %s
-                    Best treatment time: %s
+                    Available organic treatments: __ORG__
+                    Available chemical treatments: __CHEM__
+                    Spray interval: __INT__
+                    Best treatment time: __TIME__
                     
                     Format EXACTLY as:
                     Day 1: [specific action with dosage/timing]
@@ -304,42 +334,54 @@ public class KrishiGPTService {
                     - Include monitoring/inspection days
                     - Keep each day instruction under 25 words
                     - Be practical for a small Indian farmer
-                    """.formatted(language, result.getDiseaseName(),
-                    result.getSeverity(), result.getCropName(),
-                    organicList, chemicalList,
-                    result.getSprayInterval() != null ? result.getSprayInterval() : "as needed",
-                    result.getBestTimeToTreat() != null ? result.getBestTimeToTreat() : "early morning");
+                    """;
+            String planPrompt = planTemplate
+                    .replace("__LANG__", language)
+                    .replace("__DISEASE__", result.getDiseaseName() != null ? result.getDiseaseName() : "Unknown")
+                    .replace("__SEV__", result.getSeverity() != null ? result.getSeverity() : "Moderate")
+                    .replace("__CROP__", result.getCropName() != null ? result.getCropName() : "Crop")
+                    .replace("__ORG__", organicList)
+                    .replace("__CHEM__", chemicalList)
+                    .replace("__INT__", result.getSprayInterval() != null ? result.getSprayInterval() : "as needed")
+                    .replace("__TIME__", result.getBestTimeToTreat() != null ? result.getBestTimeToTreat() : "early morning");
 
             String systemPrompt = "You are KrishiGPT, a senior Indian agricultural scientist creating " +
-                    "a practical treatment plan. Be specific, actionable, and realistic.";
+                    "a practical treatment plan in " + language + ". Be specific, actionable, and realistic.";
 
             return callGroq(systemPrompt, planPrompt, startedAt);
 
         } catch (Exception e) {
             log.error("[PLAN] Generation failed: {}", e.getMessage());
             // Return a disease-specific fallback instead of generic neem oil plan
-            return buildMinimalPlan(result);
+            return buildMinimalPlan(result, langCode);
         }
     }
 
     /**
      * Minimal fallback plan that uses actual detection data instead of generic advice.
      */
-    private String buildMinimalPlan(DetectionResult result) {
+    private String buildMinimalPlan(DetectionResult result, String langCode) {
+        String language = safeLanguageName(langCode);
         String disease = result.getDiseaseName() != null ? result.getDiseaseName() : "the detected condition";
         String organic = result.getOrganicTreatment() != null && !result.getOrganicTreatment().isEmpty()
                 ? result.getOrganicTreatment().get(0) : "consult your local KVK for organic options";
         String chemical = result.getChemicalTreatment() != null && !result.getChemicalTreatment().isEmpty()
                 ? result.getChemicalTreatment().get(0) : "consult your local KVK for chemical options";
 
-        return """
-                Day 1: Inspect all plants carefully. Remove and destroy severely infected parts of %s
-                Day 2: Apply organic treatment — %s
+        String template = """
+                [Language: __LANG__]
+                Day 1: Inspect all plants carefully. Remove and destroy severely infected parts of __DISEASE__
+                Day 2: Apply organic treatment — __ORG__
                 Day 3: Improve field drainage and air circulation. Monitor spread
-                Day 4: Apply chemical treatment if organic is insufficient — %s
+                Day 4: Apply chemical treatment if organic is insufficient — __CHEM__
                 Day 5: Monitor plants for improvement. Check neighboring plants
                 Day 6: Re-apply treatment if symptoms persist. Adjust irrigation
                 Day 7: Evaluate recovery progress. Plan next treatment cycle if needed
-                """.formatted(disease, organic, chemical);
+                """;
+        return template
+                .replace("__LANG__", language)
+                .replace("__DISEASE__", disease)
+                .replace("__ORG__", organic)
+                .replace("__CHEM__", chemical);
     }
 }

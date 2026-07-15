@@ -30,4 +30,6 @@ public interface ReportRepository extends JpaRepository<DetectionReport, String>
     List<Object[]> findDiseaseTrendsAfter(@org.springframework.data.repository.query.Param("date") java.time.LocalDateTime date);
 
     List<DetectionReport> findByVerifiedFalseOrderByCreatedAtDesc();
+
+    List<DetectionReport> findByCreatedAtAfterAndIsHealthyFalse(java.time.LocalDateTime date);
 }
