@@ -193,17 +193,15 @@ public class KrishiGPTService {
     private String buildSystemPrompt(String language, String crop, String imageContext) {
         StringBuilder sb = new StringBuilder();
         String template = """
-                You are KrishiGPT, a senior Indian agricultural scientist with deep expertise \
-                in crop pathology, soil science, integrated pest management, and organic farming.
+                You are KrishiGPT, a senior Indian agricultural scientist and empathetic farm advisor with deep practical expertise \
+                in crop pathology, soil science, integrated pest management (IPM), and sustainable organic/chemical agronomy.
                 
-                RESPONSE RULES:
-                - Respond ONLY in __LANG__ language
-                - Keep responses under 200 words — be concise but expert
-                - Use simple language a farmer with basic education can understand
-                - Be specific to __CROP__ cultivation in Indian conditions
-                - AVOID repeating generic phrases like "consult KVK", "neem oil", "crop rotation", or "proper drainage" unless directly relevant
-                - Do NOT give generic templates. Offer tailored, crop-specific advice
-                - If the farmer's question lacks detail (or image quality is poor), ask CONTEXTUAL follow-up questions (e.g., leaf age, irrigation pattern, weather conditions)
+                RESPONSE & CONVERSATION RULES:
+                - MULTILINGUAL CONSISTENCY: Respond STRICTLY in __LANG__ language. Every word, recommendation, and question must be naturally expressed in __LANG__.
+                - AGRICULTURAL REALISM: Avoid robotic or template-like answers. Speak like a trusted, experienced local agricultural expert who understands Indian farming realities (monsoons, small landholdings, local markets, KVKs).
+                - CONCISE YET THOROUGH: Keep responses under 220 words. Use clear bullet points and practical steps.
+                - SPECIFICITY: Provide unique, crop-specific advice tailored for __CROP__. Do NOT use generic phrases or repeated boilerplate instructions.
+                - CONTEXT RETENTION & FOLLOW-UPS: Always consider the previous conversation turns and image context. If key diagnostic factors are missing (such as exact plant age/growth stage, recent rainfall/humidity, soil drainage, or fertilizer history), ask 1 or 2 targeted follow-up questions to give better advice.
                 """;
         sb.append(template.replace("__LANG__", language != null ? language : "English")
                           .replace("__CROP__", crop != null ? crop : "crop"));
@@ -211,26 +209,24 @@ public class KrishiGPTService {
         sb.append("""
                 
                 TREATMENT GUIDELINES:
-                - Start with the most effective, accessible solution
-                - Include specific dosages (e.g., "2ml per litre") and spray intervals
-                - If uncertain, ask clarifying questions instead of guessing
+                - Prioritize IPM: suggest immediate cultural/mechanical control first, then targeted organic/biological agents, and precise chemical fungicides/insecticides if severity requires it.
+                - Include exact dosages (e.g., "2 ml/litre water" or "250 gm/acre") and application intervals.
+                - Explain safety precautions (mask, gloves, waiting period before harvest).
                 
-                SAFETY RULES:
-                - NEVER invent chemical or brand names
-                - NEVER guarantee crop recovery
-                - Avoid assuming diseases without visual/textual evidence
+                SAFETY & REALISM RULES:
+                - NEVER hallucinate chemical brand names that don't exist; use standard active ingredients.
+                - NEVER guarantee 100% crop recovery; explain realistic prognosis.
                 """);
 
         if (imageContext != null) {
             sb.append("""
                     
-                    IMAGE ANALYSIS:
-                    The farmer has shared a crop image. Gemini Vision has analyzed it and found:
+                    IMAGE & DIAGNOSTIC CONTEXT:
+                    The farmer uploaded a photo of their __CROP__ crop which was analyzed with Gemini Vision:
                     %s
                     
-                    Use this analysis to answer the farmer's question about their crop.
-                    Reference specific symptoms visible in the image.
-                    """.formatted(imageContext));
+                    Use this visual diagnostic evidence directly in your conversation. Reference specific symptoms (spots, yellowing, lesions) visible in their crop photo.
+                    """.formatted(imageContext).replace("__CROP__", crop != null ? crop : "crop"));
         }
 
         return sb.toString();
@@ -311,44 +307,47 @@ public class KrishiGPTService {
                     ? String.join(", ", result.getChemicalTreatment()) : "consult expert";
 
             String planTemplate = """
-                    Create a specific, actionable 7-day treatment plan in __LANG__ for a farmer \
-                    dealing with __DISEASE__ (__SEV__ severity) in their __CROP__ crop.
+                    Create a highly customized, unique 7-day agricultural treatment and recovery plan in __LANG__ for a farmer \
+                    dealing with __DISEASE__ (Severity: __SEV__, Urgency: __URG__, Progression: __SPEED__, AI Confidence: __CONF__%) in their __CROP__ crop.
                     
+                    Environmental & Weather Context: __WEATHER__
                     Available organic treatments: __ORG__
                     Available chemical treatments: __CHEM__
-                    Spray interval: __INT__
-                    Best treatment time: __TIME__
+                    Recommended spray interval: __INT__
+                    Best application timing: __TIME__
                     
-                    Format EXACTLY as:
-                    Day 1: [specific action with dosage/timing]
-                    Day 2: [specific action]
-                    Day 3: [specific action]
-                    Day 4: [specific action]
-                    Day 5: [specific action]
-                    Day 6: [specific action]
-                    Day 7: [evaluation and next steps]
+                    Format EXACTLY as follows (all text in __LANG__):
+                    Day 1: [Immediate stabilization, isolation, or cultural control action with exact method]
+                    Day 2: [Specific organic or biological treatment application with precise dosage/timing]
+                    Day 3: [Soil/irrigation/environmental adjustment & symptom monitoring check]
+                    Day 4: [Targeted chemical fungicide/pesticide application if organic insufficient, with dosage & safety precautions]
+                    Day 5: [Foliar nutrition, biostimulant, or plant immunity boost]
+                    Day 6: [Follow-up inspection & second organic application or preventive barrier check]
+                    Day 7: [Recovery evaluation, harvest readiness check, and long-term prevention protocol]
                     
-                    RULES:
-                    - Each day must be different — no repeated actions
-                    - Include specific dosages and timing
-                    - Include monitoring/inspection days
-                    - Keep each day instruction under 25 words
-                    - Be practical for a small Indian farmer
+                    CRITICAL RULES:
+                    - Every single day MUST be unique, realistic, and tailored to __CROP__, __DISEASE__, and __SEV__. Do NOT use generic repetitive templates.
+                    - Adjust intensity based on __SEV__ and __URG__ (e.g. if Critical/Immediate, chemical intervention may start earlier).
+                    - Keep each day's instruction concise (under 30 words) but packed with exact practical detail.
                     """;
             String planPrompt = planTemplate
                     .replace("__LANG__", language)
-                    .replace("__DISEASE__", result.getDiseaseName() != null ? result.getDiseaseName() : "Unknown")
+                    .replace("__DISEASE__", result.getDiseaseName() != null ? result.getDiseaseName() : "Unknown condition")
                     .replace("__SEV__", result.getSeverity() != null ? result.getSeverity() : "Moderate")
+                    .replace("__URG__", result.getUrgencyLevel() != null ? result.getUrgencyLevel() : "MODERATE")
+                    .replace("__SPEED__", result.getProgressionSpeed() != null ? result.getProgressionSpeed() : "moderate")
+                    .replace("__CONF__", String.valueOf(result.getConfidence()))
+                    .replace("__WEATHER__", result.getWeatherImpact() != null ? result.getWeatherImpact() : "Standard Indian seasonal climate")
                     .replace("__CROP__", result.getCropName() != null ? result.getCropName() : "Crop")
                     .replace("__ORG__", organicList)
                     .replace("__CHEM__", chemicalList)
-                    .replace("__INT__", result.getSprayInterval() != null ? result.getSprayInterval() : "as needed")
-                    .replace("__TIME__", result.getBestTimeToTreat() != null ? result.getBestTimeToTreat() : "early morning");
+                    .replace("__INT__", result.getSprayInterval() != null ? result.getSprayInterval() : "Every 5-7 days")
+                    .replace("__TIME__", result.getBestTimeToTreat() != null ? result.getBestTimeToTreat() : "Early morning or late afternoon");
 
             String systemPrompt = "You are KrishiGPT, a senior Indian agricultural scientist creating " +
-                    "a practical treatment plan in " + language + ". Be specific, actionable, and realistic.";
+                    "a unique, practical, and tailored 7-day treatment plan in " + language + ". Avoid generic templates.";
 
-            return callGroq(systemPrompt, planPrompt, startedAt);
+            return callGroq(systemPrompt, planPrompt, startedAt, 1000);
 
         } catch (Exception e) {
             log.error("[PLAN] Generation failed: {}", e.getMessage());

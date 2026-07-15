@@ -80,9 +80,9 @@ In the Render dashboard, add the following environment variables:
 | `DB_PASS`                | Your password                                             | From Neon                      |
 | `JWT_SECRET`             | Generate random 64-char string                            | Use `openssl rand -base64 48`  |
 | `GEMINI_API_KEY`         | Your key                                                  | From Google AI Studio          |
-| `GEMINI_MODEL`           | `gemini-1.5-flash`                                        | (default)                      |
-| `GROQ_API_KEY`           | Your key                                                  | From Groq Console              |
-| `GROQ_MODEL`             | `llama3-8b-8192`                                          | (default)                      |
+| `GEMINI_MODEL`           | `gemini-2.5-flash`                                        | (default)                      |
+| `GROQ_API_KEY`           | `gsk_YourGroqApiKeyGoesHere...`                           | **REQUIRED**                   |
+| `GROQ_MODEL`             | `llama-3.1-8b-instant`                                    | (default)                      |
 | `WEATHER_API_KEY`        | Your key                                                  | Optional - from OpenWeatherMap |
 | `FRONTEND_URL`           | `https://your-vercel-domain.vercel.app`                   | Update after Vercel deployment |
 

@@ -4,8 +4,8 @@ import { updateConfig } from '../../services/adminApi'
 export default function PlatformConfigPage() {
   const [config, setConfig] = useState({
     outbreak_threshold: '10',
-    gemini_model: 'gemini-1.5-flash',
-    groq_model: 'llama3-8b-8192',
+    gemini_model: 'gemini-2.5-flash',
+    groq_model: 'llama-3.1-8b-instant',
   })
 
   const handleSave = async (key, value) => {
@@ -97,6 +97,7 @@ export default function PlatformConfigPage() {
                 }
                 className="w-full bg-[var(--bg-main)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--text-primary)] focus:outline-none focus:border-emerald-500"
               >
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recommended)</option>
                 <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
                 <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
               </select>

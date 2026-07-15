@@ -124,8 +124,8 @@
 
 3. **Configuration**
    - [ ] Admin can view current AI model settings
-   - [ ] Gemini model is `gemini-1.5-flash`
-   - [ ] Groq model is `llama3-8b-8192`
+   - [ ] Gemini model is `gemini-2.5-flash`
+   - [ ] Groq model is `llama-3.1-8b-instant`
 
 ---
 
@@ -168,8 +168,8 @@ curl -X GET https://your-backend.onrender.com/api/health/ai
     "geminiConfigured": true,
     "groqConfigured": true,
     "aiStack": {
-      "vision": "gemini-1.5-flash",
-      "chat": "llama3-8b-8192"
+      "vision": "gemini-2.5-flash",
+      "chat": "llama-3.1-8b-instant"
     }
   }
 }

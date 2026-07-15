@@ -1,6 +1,6 @@
 # FarmSense AI
 
-FarmSense AI is a production-ready crop intelligence platform for disease detection, multilingual farming advice, and field activity tracking. The system uses Gemini 1.5 Flash for image-based disease analysis and Groq-hosted Llama 3 for the chatbot layer, with a Spring Boot backend and a React frontend designed for Render and Vercel deployment.
+FarmSense AI is a production-ready crop intelligence platform for disease detection, multilingual farming advice, and field activity tracking. The system uses Gemini 2.5 Flash for image-based disease analysis and Groq-hosted Llama 3.1 for the chatbot layer, with a Spring Boot backend and a React frontend designed for Render and Vercel deployment.
 
 ## Overview
 
@@ -20,14 +20,14 @@ Spring Boot API (Render)
 PostgreSQL Database
 
 External AI Services:
-- Gemini 1.5 Flash for crop image analysis
-- Groq Llama 3 for KrishiGPT chat and treatment plans
+- Gemini 2.5 Flash for crop image analysis
+- Groq Llama 3.1 for KrishiGPT chat and treatment plans
 ```
 
 ## AI Stack
 
-- Gemini 1.5 Flash handles disease detection from uploaded images.
-- Groq Llama 3 handles natural-language agronomy guidance.
+- Gemini 2.5 Flash handles disease detection from uploaded images.
+- Groq Llama 3.1 handles natural-language agronomy guidance.
 - Responses are parsed and sanitized server-side before being returned to the frontend.
 - API keys are injected only through environment variables.
 
@@ -86,9 +86,9 @@ npm start
 - `JWT_SECRET` - JWT signing key
 - `WEATHER_API_KEY` - optional weather service key
 - `GEMINI_API_KEY` - Gemini hosted API key
-- `GEMINI_MODEL` - defaults to `gemini-1.5-flash`
+- `GEMINI_MODEL` - defaults to `gemini-2.5-flash`
 - `GROQ_API_KEY` - Groq hosted API key
-- `GROQ_MODEL` - defaults to `llama3-8b-8192`
+- `GROQ_MODEL` - defaults to `llama-3.1-8b-instant`
 - `FRONTEND_URL` - Vercel frontend URL for CORS
 
 ### Frontend

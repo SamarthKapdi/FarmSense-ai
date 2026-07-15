@@ -169,7 +169,7 @@ public class DiseaseDetectionService {
     // ═════════════════════════════════════════════════════════════════════════════
 
     private DetectionResult analyzeWithGemini(byte[] imageBytes, String crop, String language) throws Exception {
-        String prompt = buildExpertPrompt(crop);
+        String prompt = buildExpertPrompt(crop, language);
         long requestStartTime = System.currentTimeMillis();
 
         try {
@@ -239,27 +239,30 @@ public class DiseaseDetectionService {
     // EXPERT AGRONOMIST PROMPT — DISEASE-SPECIFIC, CROP-SPECIFIC
     // ═════════════════════════════════════════════════════════════════════════════
 
-    private String buildExpertPrompt(String crop) {
+    private String buildExpertPrompt(String crop, String language) {
         String c = (crop == null || crop.isBlank()) ? "crop" : crop.trim();
+        String langCode = (language == null || language.isBlank()) ? "en" : language.trim();
+        String langName = KrishiGPTService.safeLanguageName(langCode);
         String template = """
-            You are a senior plant pathologist with 25 years of experience in Indian agriculture.
+            You are a senior plant pathologist and agronomist with 25 years of experience in Indian agriculture.
             
             TASK: Examine this __CROP__ image with extreme precision. Identify any disease, pest damage, \
             nutrient deficiency, or abnormality. If the plant looks perfectly healthy, say so.
             
             CRITICAL RULES:
+            - MULTILINGUAL CONSISTENCY: All text strings (symptoms, treatments, dosage, preventive measures, reasoning, differential diagnosis, monitoring advice) inside the returned JSON MUST be written in __LANG_NAME__ (__LANG_CODE__). Do NOT return English unless __LANG_CODE__ is 'en'.
             - NEVER hallucinate diseases that cannot affect __CROP__
             - Only diagnose diseases that are known to occur in __CROP__ cultivation
             - If uncertain, set confidence below 60 and explain why
             - Explain image quality issues (blurry, dark, distant) and reduce confidence if so
             - Provide a differential diagnosis with EXPLICIT reasoning on why the primary was chosen over alternatives
-            - DO NOT use repetitive generic phrases like "consult KVK", "neem oil", "crop rotation", or "proper drainage" blindly. Be specific to the exact context.
-            - If the image is NOT a __CROP__ plant, say "Not a recognizable crop image"
-            - Base yield loss on actual agricultural research, not guesses
-            - Treatments must be specific to __CROP__ — different crops need different treatments
+            - DO NOT use repetitive generic phrases like "consult KVK", "neem oil", "crop rotation", or "proper drainage" blindly. Be specific to the exact context, growth stage, climate, and severity.
+            - If the image is NOT a __CROP__ plant, say "Not a recognizable crop image" in __LANG_NAME__
+            - Base yield loss on actual agricultural research for __CROP__, not guesses
+            - Treatments must be uniquely tailored to __CROP__, current severity, Indian seasonal conditions (e.g., Kharif/Rabi/Zaid), and crop growth stage.
             
             Return ONLY a valid JSON object with NO markdown, NO code fences, NO explanation text.
-            The JSON must have exactly these fields:
+            The JSON must have exactly these fields (values in __LANG_NAME__):
             
             {
               "disease": "exact disease name or 'Healthy'",
@@ -295,7 +298,9 @@ public class DiseaseDetectionService {
             
             IMPORTANT: Return ONLY the JSON object. No text before or after it.
             """;
-        return template.replace("__CROP__", c);
+        return template.replace("__CROP__", c)
+                       .replace("__LANG_NAME__", langName)
+                       .replace("__LANG_CODE__", langCode);
     }
 
     // ═════════════════════════════════════════════════════════════════════════════
