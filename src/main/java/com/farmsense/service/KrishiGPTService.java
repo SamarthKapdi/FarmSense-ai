@@ -33,7 +33,7 @@ public class KrishiGPTService {
     @Value("${GROQ_API_KEY:}")
     private String groqApiKey;
 
-    @Value("${app.ai.groq-model:llama-3.1-8b-instant}")
+    @Value("${app.ai.groq-model:llama-3.3-70b-versatile}")
     private String groqModel;
 
     public KrishiGPTService(WebClient.Builder webClientBuilder, ObjectMapper objectMapper,
@@ -129,11 +129,14 @@ public class KrishiGPTService {
                 }
             }
 
-            // ── Fetch Conversation Memory ──
-            List<com.farmsense.model.entity.ChatHistory> history = new ArrayList<>();
+            // ── Fetch Conversation Memory (Strictly filtered by current language) ──
+            List<com.farmsense.model.entity.ChatHistory> allHistory = new ArrayList<>();
             if (userId != null) {
-                history = chatHistoryRepository.findByUserIdOrderByCreatedAtDesc(userId);
+                allHistory = chatHistoryRepository.findByUserIdOrderByCreatedAtDesc(userId);
             }
+            List<com.farmsense.model.entity.ChatHistory> history = allHistory.stream()
+                    .filter(h -> safeLanguageName(h.getLanguage()).equalsIgnoreCase(language))
+                    .toList();
             
             // ── Build system prompt ──
             String systemPrompt = buildSystemPrompt(language, safeCrop, imageContext);
@@ -141,8 +144,7 @@ public class KrishiGPTService {
             // ── Build user message with history context ──
             StringBuilder userContext = new StringBuilder();
             if (!history.isEmpty()) {
-                userContext.append("PREVIOUS CHAT HISTORY (CRITICAL NOTE: Earlier turns in this conversation might be in a different language. Do NOT imitate the language of previous messages! You MUST respond exclusively in ")
-                           .append(language).append("):\n");
+                userContext.append("PREVIOUS CHAT HISTORY (for context, written strictly in ").append(language).append("):\n");
                 for (int i = Math.min(2, history.size() - 1); i >= 0; i--) {
                     userContext.append("Farmer: ").append(history.get(i).getQuestion()).append("\n");
                     userContext.append("KrishiGPT: ").append(history.get(i).getAnswer()).append("\n\n");
